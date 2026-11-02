@@ -362,12 +362,14 @@ If you use Rescue Radar, please cite this repository and the HumAID dataset ([CI
 
 ### Prior research by the team
 
-Rescue Radar is a downshifting decision: replacing a frontier model with a smaller open one. A member of this team has
-published on that question, before this hackathon, in *How Much Quality Survives LLM Downshifting?* (Transactions on
-Machine Learning Research), and on routing inference across speech-to-LLM pipelines in the two *PAVO* papers. That work
-shaped two choices here: every system is scored against human labels rather than an LLM judge, and each frontier model is
-measured under two prompting protocols. The Rescue Radar code, data split, fine-tune and benchmark were built during the
-event. Full citations and links: [guide/REFERENCES.md](guide/REFERENCES.md).
+Rescue Radar is a downshifting decision: replacing a frontier model with a smaller open one. Before this hackathon, a member
+of this team published on exactly that question in *How Much Quality Survives LLM Downshifting?* (TMLR, 08/2026,
+[OpenReview](https://openreview.net/forum?id=6ccINAFoJi)), which shows that LLM-judged "quality preserved" figures swing
+from 61% to 97% depending on the judge, and on routing inference across speech pipelines in *PAVO* (TMLR, 08/2026,
+[OpenReview](https://openreview.net/forum?id=zrneoIxlFx)). Our evaluation follows the first paper's advice: human labels
+instead of an LLM judge, intervals on every number, two prompting protocols per frontier model, real disaster posts.
+PAVO is the blueprint for the voice-intake item on our roadmap. The Rescue Radar code, data split, fine-tune and benchmark
+were built during the event. Full citations: [guide/REFERENCES.md](guide/REFERENCES.md).
 
 ## Hackathon disclosure
 
