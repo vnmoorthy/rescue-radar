@@ -315,7 +315,8 @@ Also used: **Anthropic** Claude Opus 5.5 as the frontier baseline (`rr/baseline.
 - [ ] Cluster near-duplicate requests so one address is not dispatched five times
 - [ ] Location extraction beyond the gazetteer (named-entity recognition plus a geocoder) with uncertainty shown on the map
 - [ ] Multilingual evaluation and newer events from other crisis datasets
-- [ ] Calibrated confidence and an "unsure, send to a human" path
+- [ ] Calibrated confidence and an "unsure, send to a human" path, then confidence-aware escalation of uncertain posts to a frontier model (the policy our team's downshifting paper recommends testing)
+- [ ] Voice intake for people who cannot reach 911: a talking [masky.ai](https://masky.ai/) avatar line that answers the call, PAVO-style routing across the speech-to-LLM pipeline, and Rescue Radar triage of the transcript
 - [ ] Export queue items as Common Alerting Protocol (CAP) messages for dispatch systems
 
 ## Contributing
@@ -358,7 +359,7 @@ If you use Rescue Radar, please cite this repository and the HumAID dataset ([CI
 | | |
 | --- | --- |
 | **NarasingaMoorthy VeiluKanthaPerumal** | [@vnmoorthy](https://github.com/vnmoorthy) · [Google Scholar](https://scholar.google.com/citations?user=s7C14hwAAAAJ&hl=en) |
-| **Seth Caldwell** | |
+| **Seth Caldwell** | [masky.ai](https://masky.ai/) |
 
 ### Prior research by the team
 
