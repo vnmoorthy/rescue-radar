@@ -12,11 +12,13 @@
 {% set ol = f(ours.latency_ms.p50) %}{% set fl = f(frontier.latency_ms.p50) %}
 {#- <picture> sources use absolute raw URLs (GitHub resolves those reliably); the <img> fallback stays relative. -#}
 {% set raw = repo | replace("https://github.com/", "https://raw.githubusercontent.com/") ~ "/main/" %}
+{#- bump v when the art changes so browsers and GitHub's image proxy fetch fresh copies -#}
+{% set v = "?v=sunrise-2" %}
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="{{ raw }}assets/hero.svg">
-  <source media="(prefers-color-scheme: light)" srcset="{{ raw }}assets/hero-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="{{ raw }}assets/hero.svg{{ v }}">
+  <source media="(prefers-color-scheme: light)" srcset="{{ raw }}assets/hero-light.svg{{ v }}">
   <img src="assets/hero.svg" alt="Rescue Radar: a radar sweep over a storm map lights up rescue requests among disaster posts" width="100%">
 </picture>
 
@@ -168,8 +170,8 @@ The live console and the benchmark share the same code path, `rr.infer.SamplerCl
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="{{ raw }}assets/architecture.svg">
-    <source media="(prefers-color-scheme: light)" srcset="{{ raw }}assets/architecture-light.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="{{ raw }}assets/architecture.svg{{ v }}">
+    <source media="(prefers-color-scheme: light)" srcset="{{ raw }}assets/architecture-light.svg{{ v }}">
     <img src="assets/architecture.svg" alt="Architecture: offline training and evaluation lane, online triage lane, and ship lane" width="100%">
   </picture>
 </p>

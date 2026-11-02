@@ -2,8 +2,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vnmoorthy/rescue-radar/main/assets/hero.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/vnmoorthy/rescue-radar/main/assets/hero-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vnmoorthy/rescue-radar/main/assets/hero.svg?v=sunrise-2">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/vnmoorthy/rescue-radar/main/assets/hero-light.svg?v=sunrise-2">
   <img src="assets/hero.svg" alt="Rescue Radar: a radar sweep over a storm map lights up rescue requests among disaster posts" width="100%">
 </picture>
 
@@ -133,8 +133,8 @@ The live console and the benchmark share the same code path, `rr.infer.SamplerCl
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vnmoorthy/rescue-radar/main/assets/architecture.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/vnmoorthy/rescue-radar/main/assets/architecture-light.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vnmoorthy/rescue-radar/main/assets/architecture.svg?v=sunrise-2">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/vnmoorthy/rescue-radar/main/assets/architecture-light.svg?v=sunrise-2">
     <img src="assets/architecture.svg" alt="Architecture: offline training and evaluation lane, online triage lane, and ship lane" width="100%">
   </picture>
 </p>
@@ -229,7 +229,7 @@ python -m rr.evaluate                               # results/metrics.json
 python scripts/render_docs.py                       # re-render README.md and the guides with the new numbers
 ```
 
-Every prediction script is resumable: rows already in `data/preds/<system>.jsonl` are skipped. Training writes a sampler checkpoint every 25 steps, so the newest one can be evaluated even if a run is cut short. The headline training run logged 314 of 432 steps so far (still training) in 104 minutes of training time on Fireworks serverless.
+Every prediction script is resumable: rows already in `data/preds/<system>.jsonl` are skipped. Training writes a sampler checkpoint every 25 steps, so the newest one can be evaluated even if a run is cut short. The headline training run logged 325 of 432 steps so far (still training) in 109 minutes of training time on Fireworks serverless.
 ## Repository layout
 
 ```text
