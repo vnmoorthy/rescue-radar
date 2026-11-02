@@ -162,9 +162,12 @@ export function createReplay(root, ctx) {
     const src = labelOf(p);
     const crit = !!(src && src.critical);
     const mistake = S.gt && src && src.label !== p.truth;
+    // Pins read the theme's tokens (guide/THEME.md) so a theme switch repaints them: rescue-critical pins take their
+    // own category color (the ember family), everything else the calm --info tone.
     const css = getComputedStyle(document.documentElement);
-    const color = crit ? css.getPropertyValue('--cat-req').trim() : css.getPropertyValue('--cat-dis').trim();
-    const missColor = css.getPropertyValue('--warn').trim();
+    const tok = n => css.getPropertyValue(n).trim();
+    const color = crit ? (tok(`--cat-${src.label}`) || tok('--critical')) : tok('--info');
+    const missColor = tok('--warn');
     return {
       radius: crit ? 6.5 : 4, color: mistake ? missColor : color, weight: mistake ? 2 : (crit ? 1.5 : 1),
       dashArray: mistake ? '3 3' : null, fillColor: color, fillOpacity: crit ? 0.85 : 0.38, opacity: crit || mistake ? 1 : 0.6,

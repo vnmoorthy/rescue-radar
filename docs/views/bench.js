@@ -23,7 +23,16 @@ export function createBench(root, ctx) {
     render(res, log);
   }
 
+  let last = null;
+  // Charts use theme tokens (var(--...)); re-render on a theme switch anyway so anything computed follows it.
+  window.addEventListener('rr:themechange', () => {
+    if (!last) return;
+    const open = Array.from(body.querySelectorAll('details')).map(d => d.open);
+    render(...last);
+    body.querySelectorAll('details').forEach((d, i) => { if (open[i]) d.open = true; });
+  });
   function render(res, log) {
+    last = [res, log];
     const systems = displaySystems(res, ctx.meta);
     const keys = orderSystems(res);
     let html = '';
@@ -260,11 +269,11 @@ function confusion(s) {
     row.forEach((v, j) => {
       const share = v / tot;
       const diag = i === j;
-      const fill = diag ? 'var(--accent)' : (isCritical(labs[i]) ? 'var(--cat-req)' : 'var(--text-2)');
+      const fill = diag ? 'var(--accent)' : (isCritical(labs[i]) ? `var(--cat-${labs[i]}, var(--critical))` : 'var(--text-2)');
       out += `<g data-tip="Human: ${esc(labelName(labs[i]))}<br>Predicted: ${esc(labelName(labs[j]))}<br>${fmtInt(v)} posts · ${(share * 100).toFixed(1)}% of row">
         <rect x="${L + j * cell + 1}" y="${T + i * cell + 1}" width="${cell - 2}" height="${cell - 2}" rx="2" fill="var(--panel-3)"/>
         <rect x="${L + j * cell + 1}" y="${T + i * cell + 1}" width="${cell - 2}" height="${cell - 2}" rx="2" fill="${fill}" opacity="${v ? (0.12 + share * 0.85).toFixed(3) : 0}"/>
-        ${v ? `<text x="${L + j * cell + cell / 2}" y="${T + i * cell + cell / 2 + 4}" text-anchor="middle" style="font-size:10px;fill:${share > 0.45 ? 'var(--bg)' : 'var(--text)'}">${v}</text>` : ''}</g>`;
+        ${v ? `<text class="cell-v" x="${L + j * cell + cell / 2}" y="${T + i * cell + cell / 2 + 4}" text-anchor="middle" style="font-size:10px">${v}</text>` : ''}</g>`;
     });
   });
   return out + '</svg>';

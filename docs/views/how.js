@@ -71,6 +71,7 @@ export function createHow(root, ctx) {
         </div>
       </div>`;
   }
+  window.addEventListener('rr:themechange', () => { if (painted) paint(ctx.resultsNow()); });
   return {
     activate() {
       if (painted) return;
@@ -116,7 +117,7 @@ function diagram(ev, nEval, nTrain) {
     ${box(260, 250, 200, 92, 'Fine-tune', 'LoRA SFT', ['Fireworks serverless training', 'base: Nemotron 3.5 Super'])}
     ${box(500, 250, 210, 92, 'Held out', `${nTe} unseen disasters`, ['2019: Dorian, Idai, Pakistan', `quake, Midwest floods${nEval ? ` · ${fmtInt(nEval)} posts` : ''}`])}
     ${box(750, 250, 160, 92, 'Frontier baselines', 'Claude Opus 5.5', ['+ GPT-6.1 Terra; same', 'instructions + 20 shots'])}
-    ${box(750, 356, 160, 58, 'Also scored', 'Nemotron base', ['the untuned "before"'])}
+    ${box(750, 356, 160, 66, 'Also scored', 'Nemotron base', ['the untuned "before"'])}
     ${box(945, 250, 145, 92, 'Scorecard', 'Benchmark', ['F1, critical recall,', 'cost, latency,', 'McNemar, bootstrap'])}
     <path class="flow" d="M220 296 H258"/>
     <path class="flow" d="M360 250 C360 190 330 190 330 132" />

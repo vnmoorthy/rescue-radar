@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" role="img" aria-labelledby="t d">
+<title id="t">Rescue Radar architecture</title>
+<desc id="d">Offline: HumAID data is split by disaster, a LoRA adapter for NVIDIA Nemotron 3.5 Super is trained on Fireworks serverless training, and every system is scored on unseen 2019 disasters. Online: posts flow through the FastAPI server to the same model on Fireworks serverless sampling; rescue-critical posts go to a priority queue after PII redaction and geocoding; a human dispatcher decides.</desc>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8A8981"/></marker><marker id="arc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#A85F00"/></marker><linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBFAF7"/><stop offset="1" stop-color="#F6F5F1"/></linearGradient><linearGradient id="streak" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#A85F00" stop-opacity="0"/><stop offset=".3" stop-color="#A85F00"/><stop offset=".5" stop-color="#D98A1C"/><stop offset=".7" stop-color="#A85F00"/><stop offset="1" stop-color="#A85F00" stop-opacity="0"/></linearGradient></defs>
+<rect x="0" y="0" width="1280" height="900" rx="16" fill="url(#card)" stroke="#DEDBD2" stroke-width="2"/>
+<rect x="0" y="0.75" width="1280" height="1.5" fill="url(#streak)" opacity=".8"/>
+<text x="48" y="62" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="28" font-weight="600" fill="#11120F">How Rescue Radar works</text>
+<text x="48" y="92" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15.5" fill="#46463F">Same prompt, same weights, same code path for the benchmark and the live console: what was scored is what the dispatcher sees.</text>
+<circle cx="54" cy="122" r="5.5" fill="#4F4A8C"/>
+<text x="66" y="127" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46463F">Fireworks AI</text>
+<circle cx="175.2" cy="122" r="5.5" fill="#2E7D4F"/>
+<text x="187.2" y="127" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46463F">NVIDIA</text>
+<circle cx="250.79999999999998" cy="122" r="5.5" fill="#2F5F8A"/>
+<text x="262.79999999999995" y="127" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46463F">Microsoft</text>
+<circle cx="349.2" cy="122" r="5.5" fill="#7A4570"/>
+<text x="361.2" y="127" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46463F">Anthropic</text>
+<circle cx="447.59999999999997" cy="122" r="5.5" fill="#7A6326"/>
+<text x="459.59999999999997" y="127" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46463F">QCRI HumAID</text>
+<circle cx="561.1999999999999" cy="122" r="5.5" fill="#C4321A"/>
+<text x="573.1999999999999" y="127" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46463F">Human</text>
+<rect x="28" y="150" width="1224" height="262" rx="12" fill="#F0EEE8" stroke="#E2DFD6" stroke-dasharray="0"/>
+<text x="48" y="176" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" letter-spacing="1.75" fill="#A85F00">TRAIN AND PROVE  ·  OFFLINE</text>
+<rect x="48" y="192" width="178" height="200" rx="10" fill="#FFFFFF" stroke="#D9CBA8" stroke-width="1.4"/>
+<text x="62" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">HumAID</text>
+<text x="62" y="242.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Human-labeled tweets</text>
+<text x="62" y="260.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">from disasters in</text>
+<text x="62" y="279.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">2016 to 2019, in 10</text>
+<text x="62" y="297.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">humanitarian categories</text>
+<rect x="62" y="364" width="88.6" height="18" rx="9" fill="#7A6326" fill-opacity=".14" stroke="#7A6326" stroke-opacity=".7"/>
+<text x="106.3" y="377" text-anchor="middle" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#7A6326">QCRI HumAID</text>
+<rect x="248" y="192" width="178" height="200" rx="10" fill="#FFFFFF" stroke="#D6D3C9" stroke-width="1.4"/>
+<text x="262" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">rr.prep</text>
+<text x="262" y="242.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Split by disaster:</text>
+<text x="262" y="260.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">train 2016 to 2018,</text>
+<text x="262" y="279.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">test on unseen 2019</text>
+<text x="262" y="297.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Drop train tweets that</text>
+<text x="262" y="316.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">also appear in test</text>
+<rect x="448" y="192" width="178" height="200" rx="10" fill="#FFFFFF" stroke="#C8C5E2" stroke-width="1.4"/>
+<text x="462" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">rr.train</text>
+<text x="462" y="242.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">LoRA SFT on Fireworks</text>
+<text x="462" y="260.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">serverless training</text>
+<text x="462" y="279.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Base: NVIDIA Nemotron</text>
+<text x="462" y="297.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">3.5 Super</text>
+<text x="462" y="316.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Loss on label tokens</text>
+<rect x="462" y="364" width="95.2" height="18" rx="9" fill="#4F4A8C" fill-opacity=".14" stroke="#4F4A8C" stroke-opacity=".7"/>
+<text x="509.6" y="377" text-anchor="middle" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#4F4A8C">Fireworks AI</text>
+<rect x="563.2" y="364" width="55.6" height="18" rx="9" fill="#2E7D4F" fill-opacity=".14" stroke="#2E7D4F" stroke-opacity=".7"/>
+<text x="591" y="377" text-anchor="middle" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#2E7D4F">NVIDIA</text>
+<rect x="648" y="192" width="178" height="200" rx="10" fill="#FFFFFF" stroke="#D6D3C9" stroke-width="1.4"/>
+<text x="662" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">predict</text>
+<text x="662" y="242.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">rr.run_model: LoRA and</text>
+<text x="662" y="260.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">base Nemotron through</text>
+<text x="662" y="279.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Fireworks sampling</text>
+<text x="662" y="297.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">rr.baseline: Claude</text>
+<text x="662" y="316.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Opus 5.5 + GPT-6.1</text>
+<text x="662" y="334.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Terra, 0 and 20-shot</text>
+<rect x="662" y="364" width="84" height="18" rx="9" fill="#4F4A8C" fill-opacity=".14" stroke="#4F4A8C" stroke-opacity=".7"/>
+<text x="704" y="377" text-anchor="middle" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#4F4A8C">Fireworks AI</text>
+<rect x="752" y="364" width="66" height="18" rx="9" fill="#7A4570" fill-opacity=".14" stroke="#7A4570" stroke-opacity=".7"/>
+<text x="785" y="377" text-anchor="middle" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#7A4570">Anthropic</text>
+<rect x="848" y="192" width="178" height="200" rx="10" fill="#FFFFFF" stroke="#D6D3C9" stroke-width="1.4"/>
+<text x="862" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">rr.evaluate</text>
+<text x="862" y="242.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Macro-F1, accuracy,</text>
+<text x="862" y="260.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">rescue-critical recall,</text>
+<text x="862" y="279.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">latency, cost per post</text>
+<text x="862" y="297.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Exact McNemar + paired</text>
+<text x="862" y="316.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">bootstrap by disaster</text>
+<rect x="1048" y="192" width="178" height="200" rx="10" fill="#FFFFFF" stroke="#D6D3C9" stroke-width="1.4"/>
+<text x="1062" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">metrics.json</text>
+<text x="1062" y="242.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">results/metrics.json</text>
+<text x="1062" y="260.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">feeds the README, the</text>
+<text x="1062" y="279.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">console's Benchmark</text>
+<text x="1062" y="297.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">view and the deck,</text>
+<text x="1062" y="316.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">rendered at build time</text>
+<path d="M226,292 L244,292" stroke="#8A8981" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M426,292 L444,292" stroke="#8A8981" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M626,292 L644,292" stroke="#8A8981" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M826,292 L844,292" stroke="#8A8981" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M1026,292 L1044,292" stroke="#8A8981" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<rect x="28" y="438" width="1224" height="282" rx="12" fill="#F0EEE8" stroke="#E2DFD6" stroke-dasharray="0"/>
+<text x="48" y="464" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" letter-spacing="1.75" fill="#A85F00">TRIAGE IN REAL TIME  ·  ONLINE</text>
+<rect x="48" y="480" width="178" height="214" rx="10" fill="#FFFFFF" stroke="#D6D3C9" stroke-width="1.4"/>
+<text x="62" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">posts</text>
+<text x="62" y="530.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Live posts, or a replay</text>
+<text x="62" y="548.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">of the 2019 disasters</text>
+<text x="62" y="567.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">in original order</text>
+<text x="62" y="585.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">(time decoded from</text>
+<text x="62" y="604.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">the tweet ID)</text>
+<rect x="248" y="480" width="178" height="214" rx="10" fill="#FFFFFF" stroke="#D6D3C9" stroke-width="1.4"/>
+<text x="262" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">rr.server</text>
+<text x="262" y="530.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">FastAPI + console</text>
+<text x="262" y="548.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">/api/classify</text>
+<text x="262" y="567.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">/api/replay</text>
+<text x="262" y="585.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">/api/queue</text>
+<text x="262" y="604.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">/api/compare</text>
+<rect x="448" y="480" width="178" height="214" rx="10" fill="#FFFFFF" stroke="#C8C5E2" stroke-width="1.4"/>
+<text x="462" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">rr.infer</text>
+<text x="462" y="530.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Fireworks serverless</text>
+<text x="462" y="548.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">sampling, LoRA on</text>
+<text x="462" y="567.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Nemotron 3.5 Super</text>
+<text x="462" y="585.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">temperature 0</text>
+<text x="462" y="604.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">one label per post</text>
+<rect x="462" y="666" width="95.2" height="18" rx="9" fill="#4F4A8C" fill-opacity=".14" stroke="#4F4A8C" stroke-opacity=".7"/>
+<text x="509.6" y="679" text-anchor="middle" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#4F4A8C">Fireworks AI</text>
+<rect x="563.2" y="666" width="55.6" height="18" rx="9" fill="#2E7D4F" fill-opacity=".14" stroke="#2E7D4F" stroke-opacity=".7"/>
+<text x="591" y="679" text-anchor="middle" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#2E7D4F">NVIDIA</text>
+<rect x="648" y="480" width="178" height="214" rx="10" fill="#FFFFFF" stroke="#EDBFB3" stroke-width="1.4"/>
+<text x="662" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">route</text>
+<text x="662" y="530.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Rescue-critical?</text>
+<text x="662" y="548.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">requests or urgent</text>
+<text x="662" y="567.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">needs, injured or dead,</text>
+<text x="662" y="585.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">missing or found</text>
+<text x="662" y="604.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">yes: priority queue</text>
+<rect x="848" y="480" width="178" height="214" rx="10" fill="#FFFFFF" stroke="#BDD0E3" stroke-width="1.4"/>
+<text x="862" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">rr.scrub + geo</text>
+<text x="862" y="530.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">PII redaction before</text>
+<text x="862" y="548.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">a human reads a post</text>
+<text x="862" y="567.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">(Microsoft Presidio,</text>
+<text x="862" y="585.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">regex fallback)</text>
+<text x="862" y="604.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Gazetteer: place to map</text>
+<rect x="862" y="666" width="75.4" height="18" rx="9" fill="#2F5F8A" fill-opacity=".14" stroke="#2F5F8A" stroke-opacity=".7"/>
+<text x="899.7" y="679" text-anchor="middle" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#2F5F8A">Microsoft</text>
+<rect x="1048" y="480" width="178" height="214" rx="10" fill="#FFFFFF" stroke="#EDBFB3" stroke-width="1.4"/>
+<text x="1062" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">console</text>
+<text x="1062" y="530.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Map, live feed and</text>
+<text x="1062" y="548.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">priority queue</text>
+<text x="1062" y="567.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Dispatch, resolve or</text>
+<text x="1062" y="585.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">dismiss; CSV export</text>
+<text x="1062" y="604.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">A human decides</text>
+<rect x="1062" y="666" width="49" height="18" rx="9" fill="#C4321A" fill-opacity=".14" stroke="#C4321A" stroke-opacity=".7"/>
+<text x="1086.5" y="679" text-anchor="middle" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#C4321A">Human</text>
+<path d="M226,587 L244,587" stroke="#8A8981" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M426,587 L444,587" stroke="#8A8981" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M626,587 L644,587" stroke="#8A8981" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M826,587 L844,587" stroke="#8A8981" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M1026,587 L1044,587" stroke="#8A8981" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M537,394 L537,476" stroke="#A85F00" stroke-width="1.8" fill="none" stroke-dasharray="5 5" marker-end="url(#arc)"/>
+<text x="547.0" y="441.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#A85F00">same LoRA weights, same prompt</text>
+<path d="M1137,394 L1137,476" stroke="#8A8981" stroke-width="1.8" fill="none" stroke-dasharray="5 5" marker-end="url(#ar)"/>
+<text x="1127.0" y="441.0" text-anchor="end" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#46463F">Benchmark view</text>
+<rect x="28" y="746" width="1224" height="128" rx="12" fill="#F0EEE8" stroke="#E2DFD6" stroke-dasharray="0"/>
+<text x="48" y="772" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" letter-spacing="1.75" fill="#A85F00">SHIP</text>
+<rect x="48" y="784" width="380" height="76" rx="10" fill="#FFFFFF" stroke="#D6D3C9" stroke-width="1.4"/>
+<text x="64" y="810" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" font-weight="500" fill="#11120F">scripts/export_static.py</text>
+<text x="64" y="831" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">docs/ on GitHub Pages: the console</text>
+<text x="64" y="849" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">replaying recorded predictions, plus the deck</text>
+<rect x="450" y="784" width="380" height="76" rx="10" fill="#FFFFFF" stroke="#D6D3C9" stroke-width="1.4"/>
+<text x="466" y="810" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" font-weight="500" fill="#11120F">scripts/render_docs.py</text>
+<text x="466" y="831" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">README and guides rendered from</text>
+<text x="466" y="849" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">results/metrics.json: no hand-typed numbers</text>
+<rect x="852" y="784" width="380" height="76" rx="10" fill="#FFFFFF" stroke="#D6D3C9" stroke-width="1.4" stroke-dasharray="6 5"/>
+<text x="868" y="810" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" font-weight="500" fill="#11120F">rr.promote  →  next steps</text>
+<text x="868" y="831" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Promote the adapter to a Fireworks model;</text>
+<text x="868" y="849" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">dedicated deployment or Microsoft Foundry</text>
+</svg>

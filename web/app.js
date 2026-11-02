@@ -11,17 +11,30 @@ import { createHow } from './views/how.js';
 const VIEWS = ['replay', 'triage', 'h2h', 'bench', 'how'];
 const FACTORIES = { replay: createReplay, triage: createTriage, h2h: createH2H, bench: createBench, how: createHow };
 const root = document.documentElement;
-const themeListeners = new Set();
 const getTheme = () => (root.dataset.theme === 'light' ? 'light' : 'dark');
 
-function setTheme(t, persist = true) {
-  root.dataset.theme = t;
-  if (persist) { try { localStorage.setItem('rr-theme', t); } catch { /* ignore */ } }
+// Theme (guide/THEME.md): the inline head script picked it before first paint; this keeps the toggle in sync,
+// persists explicit choices and tells charts and the map to repaint via a 'rr:themechange' event on window.
+function syncToggle(t) {
   const btn = document.getElementById('theme-toggle');
-  btn.setAttribute('aria-label', t === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
-  for (const fn of themeListeners) { try { fn(t); } catch (e) { console.error(e); } }
+  if (!btn) return;
+  btn.setAttribute('aria-pressed', String(t === 'dark'));
+  btn.title = t === 'dark' ? 'Switch to light theme (T)' : 'Switch to dark theme (T)';
+}
+function setTheme(t, persist = true) {
+  const changed = getTheme() !== t || root.dataset.theme !== t;
+  root.dataset.theme = t;
+  if (persist) { root.dataset.themeSrc = 'saved'; try { localStorage.setItem('rr-theme', t); } catch { /* ignore */ } }
+  syncToggle(t);
+  if (changed) window.dispatchEvent(new CustomEvent('rr:themechange', { detail: { theme: t } }));
 }
 const toggleTheme = () => setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+// No saved choice and no ?theme=: keep following the OS while the page is open.
+try {
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+    if (root.dataset.themeSrc === 'os') setTheme(e.matches ? 'light' : 'dark', false);
+  });
+} catch { /* old browsers */ }
 
 function paintHealth(h, mode) {
   const host = document.getElementById('health');
@@ -41,7 +54,7 @@ function paintHealth(h, mode) {
 
 async function main() {
   initTooltips();
-  setTheme(getTheme(), false);
+  syncToggle(getTheme());
   document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
   const help = document.getElementById('help');
   const openHelp = () => { help.hidden = false; help.querySelector('[data-close]').focus(); };
@@ -89,7 +102,7 @@ async function main() {
     api, meta, health,
     queue: new QueueStore(api),
     theme: getTheme,
-    onTheme: fn => themeListeners.add(fn),
+    onTheme: fn => window.addEventListener('rr:themechange', e => { try { fn(e.detail.theme); } catch (err) { console.error(err); } }),
     results: null,
     resultsNow: () => results,
     setResults: r => { results = r; ctx.results = Promise.resolve(r); },

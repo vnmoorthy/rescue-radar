@@ -10,9 +10,15 @@
 {% set of1 = f(ours.macro_f1) %}{% set ff1 = f(frontier.macro_f1) %}
 {% set oc = f(ours.cost_per_1m_usd) %}{% set fc = f(frontier.cost_per_1m_usd) %}
 {% set ol = f(ours.latency_ms.p50) %}{% set fl = f(frontier.latency_ms.p50) %}
+{#- <picture> sources use absolute raw URLs (GitHub resolves those reliably); the <img> fallback stays relative. -#}
+{% set raw = repo | replace("https://github.com/", "https://raw.githubusercontent.com/") ~ "/main/" %}
 <div align="center">
 
-<img src="assets/hero.svg" alt="Rescue Radar: a radar sweep over a storm map lights up rescue requests among disaster posts" width="100%">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="{{ raw }}assets/hero.svg">
+  <source media="(prefers-color-scheme: light)" srcset="{{ raw }}assets/hero-light.svg">
+  <img src="assets/hero.svg" alt="Rescue Radar: a radar sweep over a storm map lights up rescue requests among disaster posts" width="100%">
+</picture>
 
 ### Find the people asking for rescue in the flood of disaster posts, in real time.
 
@@ -62,7 +68,7 @@
 
 ## Contents
 
-[Why this matters](#why-this-matters) · [Results](#results) · [How it works](#how-it-works) · [Evaluation design](#evaluation-design-held-out-disasters) · [Quickstart](#quickstart) · [Reproduce the benchmark](#reproduce-the-benchmark) · [Repository layout](#repository-layout) · [Sponsor stack](#sponsor-stack) · [Responsible AI and limitations](#responsible-ai-and-limitations) · [Roadmap](#roadmap) · [Contributing](#contributing) · [Citation](#citation) · [Team](#team)
+[Why this matters](#why-this-matters) · [Results](#results) · [How it works](#how-it-works) · [Evaluation design](#evaluation-design-held-out-disasters) · [Quickstart](#quickstart) · [Reproduce the benchmark](#reproduce-the-benchmark) · [Repository layout](#repository-layout) · [Sponsor stack](#sponsor-stack) · [Responsible AI and limitations](#responsible-ai-and-limitations) · [From hackathon to company](#from-hackathon-to-company) · [Roadmap](#roadmap) · [Contributing](#contributing) · [Citation](#citation) · [Team](#team)
 
 ## Why this matters
 
@@ -161,7 +167,11 @@ Small classes have wide intervals: read per-class numbers for categories with fe
 The live console and the benchmark share the same code path, `rr.infer.SamplerClassifier`, with the same prompt from `rr/labels.py`. By default the server serves exactly the checkpoint the benchmark scored for the headline system (recorded in `data/preds/<system>.meta.json`), and the console's header badge says "scored". `RR_LIVE_MODEL=latest` serves the newest training checkpoint instead, and the badge then says it is not scored.
 
 <p align="center">
-  <img src="assets/architecture.svg" alt="Architecture: offline training and evaluation lane, online triage lane, and ship lane" width="100%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="{{ raw }}assets/architecture.svg">
+    <source media="(prefers-color-scheme: light)" srcset="{{ raw }}assets/architecture-light.svg">
+    <img src="assets/architecture.svg" alt="Architecture: offline training and evaluation lane, online triage lane, and ship lane" width="100%">
+  </picture>
 </p>
 
 ```mermaid
@@ -306,6 +316,50 @@ Also used: **Anthropic** Claude Opus 5.5 as the frontier baseline (`rr/baseline.
 - **Not every baseline answered every post.**{% for r in rows if r.s.coverage is number and r.s.coverage < 1 %} {{ r.name }} answered {{ num(r.s.n) }} posts ({{ pct(r.s.coverage, 0) }}) before the Anthropic spending cap.{% endfor %} Comparisons are paired on the posts both systems answered.
 - **Unseen by our fine-tune, not necessarily by every model.** The 2019 test disasters are absent from our fine-tuning data, but they are public tweets (and HumAID has been public since 2021), so we cannot rule out that any model saw them in pretraining.
 - **Non-commercial data.** HumAID is licensed CC BY-NC-SA 4.0. The code in this repo is MIT, but models trained on HumAID and derived data inherit the non-commercial, share-alike terms.
+
+## From hackathon to company
+
+What exists today is a working dispatch console, an HTTP API and a held-out benchmark. This section is the plan for turning them into a company. It is a plan, not a track record: there are no customers, partners or prices yet.
+
+**Who pays.** Organizations that must find people in trouble during a disaster, and today read public posts by hand or not at all:
+
+- city, county and state emergency management agencies and their emergency operations centers;
+- emergency communications and dispatch centers;
+- humanitarian organizations that run response operations;
+- vendors of dispatch and emergency-management software, who would embed the API in products agencies already use.
+
+**Product surfaces.**
+
+| Surface | What it is | Status |
+| --- | --- | --- |
+| Dispatch console | Map, priority queue, situational feed, dispatch / resolve / dismiss with notes, CSV export | Built (this repo) |
+| Triage API | `/api/classify` and the queue endpoints, for dispatch and emergency-management software | Built; a product needs authentication, rate limits and an uptime commitment |
+| Private deployment | The open-weight base model plus our adapter, run in the customer's own cloud or data center | Planned: adapter export is not built yet |
+| Standard alert export | Queue items as Common Alerting Protocol (CAP) messages for dispatch systems | Planned |
+
+**Pricing model.** No prices are set. The model we would test: an annual subscription per agency for the console (seats plus a baseline volume of posts), usage-based pricing per post for software vendors on the API, surge capacity during declared disasters, and a separate license for private deployments. Pilots come first.
+
+**Why margins can be strong.** The main variable cost is the model call, and it is measured, not estimated:{% if oc is not none and fc is not none %} {{ usd(oc) }} per million posts on Fireworks serverless ({{ usd(ours.cost_per_1m_usd_undiscounted) }} at the undiscounted rate), against {{ usd(fc) }} for the frontier baseline ({{ frontier_name }}){% endif %}{% set fr_rows = rows | selectattr("s.kind", "equalto", "frontier") | selectattr("s.cost_per_1m_usd", "number") | sort(attribute="s.cost_per_1m_usd") | list %}{% if fr_rows %}{% set cheap = fr_rows[0] %}{% set cc = cmp_by_b.get(cheap.key) or {} %} and {{ usd(cheap.s.cost_per_1m_usd) }} for the cheapest frontier configuration we measured ({{ cheap.name }}){% if ci_side(cc.bootstrap.macro_f1_delta_ci95) == "above" %}, which also scored lower macro-F1 in the paired comparison (Rescue Radar {{ pts(cc.delta_macro_f1) }}, 95% CI {{ ci_pts(cc.bootstrap.macro_f1_delta_ci95) }}){% endif %}{% endif %}. Per-token pricing keeps the cost per post flat as volume grows, and because the base model is open-weight, serving is not tied to one frontier provider's price list: the same adapter could run on a dedicated Fireworks deployment or, once export is built, on a customer's own hardware. A subscription priced on the value of finding requests, on top of that cost, leaves room for healthy gross margins.
+
+**A data moat from dispatcher feedback.** Every dispatcher action is a label: a dispatched, resolved or dismissed item says whether the model ranked that post well. With each customer's consent, those labels become training data for the next adapter (see [Roadmap](#roadmap)), so the model keeps learning the platforms, languages and kinds of disaster that customers actually see. A new adapter would ship only if it beats the current one on held-out disasters, with the same paired statistics as this benchmark. This matters for licensing too: the current adapter is trained on HumAID, which is non-commercial (CC BY-NC-SA 4.0), so a commercial product needs commercially licensed training data, from a license with the dataset's authors or from customers' own labels.
+
+**Open weights, run privately.** Nemotron 3.5 Super is an open-weight model. An agency that cannot send posts to a third-party API could run the base model and our adapter inside its own environment, and personal data is already redacted before a dispatcher reads a post.
+
+**Go to market.**
+
+1. **Pilots with emergency operations centers.** Replay a past disaster from the agency's own area through the console (the replay mode exists today), then run Rescue Radar in shadow mode next to the current process during an exercise or a live activation, and measure what it catches and what it misses.
+2. **Partnerships with dispatch-software vendors.** Agencies get Rescue Radar inside tools they already bought, through procurement they have already done; the vendor gets a measured triage model without building one.
+3. **Expand by region and language.** Each new deployment adds feedback labels; multilingual evaluation is on the roadmap.
+
+**Risks, and how the product handles them.**
+
+| Risk | How Rescue Radar handles it |
+| --- | --- |
+| Liability for a missed or wrong call | It is decision support: the model ranks, and a dispatcher decides every queue item. It never drops a post: anything not marked rescue-critical stays in the situational feed for a person to read. Recall and precision on unseen disasters are published with intervals, including the weak side:{% if ours.critical.precision is number and frontier.critical.precision is number %} rescue-critical precision is {{ pct(ours.critical.precision) }} against {{ pct(frontier.critical.precision) }} for {{ frontier_name }}, so dispatchers see more false alarms in exchange for fewer missed requests.{% else %} see [Results](#results).{% endif %} |
+| Long public-sector procurement cycles | Start with pilots that replay past events (no integration needed), and sell through software vendors that agencies already buy from. |
+| Platform data access | Social platforms restrict and charge for API access, and their terms change. The model classifies any text, by paste, upload or API, so customers connect the sources they are licensed to use; voice intake is on the roadmap. Live stream ingestion is not built yet. |
+| Drift to new platforms, languages and disasters | Retrain from dispatcher feedback, and gate every new adapter on held-out disasters before it ships. |
+| Privacy | PII is redacted before human review (best effort, see [limitations](#responsible-ai-and-limitations)), and private deployment keeps posts inside the agency. |
 
 ## Roadmap
 
