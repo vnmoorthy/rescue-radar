@@ -221,7 +221,7 @@ python -m rr.evaluate                               # results/metrics.json
 python scripts/render_docs.py                       # re-render README.md and the guides with the new numbers
 ```
 
-Every prediction script is resumable: rows already in `data/preds/<system>.jsonl` are skipped. Training writes a sampler checkpoint every 25 steps, so the newest one can be evaluated even if a run is cut short. The headline training run logged 291 of 432 steps so far (still training) in 83 minutes of training time on Fireworks serverless.
+Every prediction script is resumable: rows already in `data/preds/<system>.jsonl` are skipped. Training writes a sampler checkpoint every 25 steps, so the newest one can be evaluated even if a run is cut short. The headline training run logged 293 of 432 steps so far (still training) in 85 minutes of training time on Fireworks serverless.
 ## Repository layout
 
 ```text
@@ -322,8 +322,17 @@ If you use Rescue Radar, please cite this repository and the HumAID dataset ([CI
 
 | | |
 | --- | --- |
-| **vnmoorthy** | [@vnmoorthy](https://github.com/vnmoorthy) |
+| **NarasingaMoorthy VeiluKanthaPerumal** | [@vnmoorthy](https://github.com/vnmoorthy) · [Google Scholar](https://scholar.google.com/citations?user=s7C14hwAAAAJ&hl=en) |
 | **Seth Caldwell** | |
+
+### Prior research by the team
+
+Rescue Radar is a downshifting decision: replacing a frontier model with a smaller open one. A member of this team has
+published on that question, before this hackathon, in *How Much Quality Survives LLM Downshifting?* (Transactions on
+Machine Learning Research), and on routing inference across speech-to-LLM pipelines in the two *PAVO* papers. That work
+shaped two choices here: every system is scored against human labels rather than an LLM judge, and each frontier model is
+measured under two prompting protocols. The Rescue Radar code, data split, fine-tune and benchmark were built during the
+event. Full citations and links: [guide/REFERENCES.md](guide/REFERENCES.md).
 
 ## Hackathon disclosure
 
