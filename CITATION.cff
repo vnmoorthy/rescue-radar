@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use Rescue Radar, please cite this repository and the HumAID dataset it is built on."
+title: "Rescue Radar: real-time triage of disaster posts with a LoRA-tuned open model"
+abstract: >-
+  Rescue Radar classifies social media posts written during disasters into the HumAID humanitarian
+  categories and routes rescue-critical posts to a dispatcher's priority queue. It fine-tunes NVIDIA
+  Nemotron 3.5 Super with LoRA on Fireworks serverless training and evaluates on disasters held out
+  from training, against Claude Opus 5.5 and the untuned base model.
+type: software
+authors:
+  - alias: vnmoorthy
+  - given-names: Seth
+    family-names: Caldwell
+repository-code: "https://github.com/vnmoorthy/rescue-radar"
+url: "https://vnmoorthy.github.io/rescue-radar/"
+license: MIT
+date-released: "2026-11-02"
+keywords:
+  - disaster response
+  - crisis informatics
+  - humanitarian AI
+  - text classification
+  - LoRA
+  - fine-tuning
+  - NVIDIA Nemotron
+  - Fireworks AI
+references:
+  - type: conference-paper
+    title: "HumAID: Human-Annotated Disaster Incidents Data from Twitter with Deep Learning Benchmarks"
+    authors:
+      - given-names: Firoj
+        family-names: Alam
+      - given-names: Umair
+        family-names: Qazi
+      - given-names: Muhammad
+        family-names: Imran
+      - given-names: Ferda
+        family-names: Ofli
+    collection-title: "Proceedings of the International AAAI Conference on Web and Social Media (ICWSM)"
+    year: 2021
+    license: CC-BY-NC-SA-4.0
+    url: "https://huggingface.co/datasets/QCRI/HumAID-events"

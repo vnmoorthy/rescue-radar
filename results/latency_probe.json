@@ -1,0 +1,15 @@
+{
+ "n": 30,
+ "mode": "sequential, one request at a time, after one warm-up call",
+ "ours": {
+  "name": "Rescue Radar: Nemotron 3.5 Super + LoRA (step 125)",
+  "p50_ms": 4543.1,
+  "p95_ms": 6362.4
+ },
+ "frontier": {
+  "name": "GPT-6.1 Terra (20-shot)",
+  "p50_ms": 1506.1,
+  "p95_ms": 3812.0
+ },
+ "measured_at": "2026-11-02T14:18:57"
+}

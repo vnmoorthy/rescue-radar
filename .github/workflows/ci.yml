@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (no API keys)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # No secrets in CI: the suite must pass without model access.
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Create an empty .env
+        # rr.env.load_env() reads .env from the repo root; in CI it holds no keys.
+        run: touch .env
+
+      - name: Byte-compile
+        run: python -m compileall -q rr scripts
+
+      - name: Run tests
+        run: python -m pytest tests/ -q
+
+      - name: Render docs (smoke test)
+        run: python scripts/render_docs.py
+
+      - name: Check for committed secrets
+        run: python scripts/check_secrets.py

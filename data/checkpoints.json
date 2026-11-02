@@ -1,0 +1,32 @@
+{
+ "base_model": "accounts/fireworks/models/nvidia-nemotron-3p5-super-vl-120b-a12b-bf16",
+ "session": "ts-b3b9dd825f194d349e5d117fc5e98411",
+ "run": "run-c153d81b2a414515ab6159258492b429",
+ "checkpoints": [
+  {
+   "step": 25,
+   "path": "vnmoorthy/run-c153d81b2a414515ab6159258492b429/rr-s0025-5dc7a86e",
+   "at": "13:41:22"
+  },
+  {
+   "step": 50,
+   "path": "vnmoorthy/run-c153d81b2a414515ab6159258492b429/rr-s0050-5dc7a86e",
+   "at": "13:44:19"
+  },
+  {
+   "step": 75,
+   "path": "vnmoorthy/run-c153d81b2a414515ab6159258492b429/rr-s0075-5dc7a86e",
+   "at": "13:48:28"
+  },
+  {
+   "step": 100,
+   "path": "vnmoorthy/run-c153d81b2a414515ab6159258492b429/rr-s0100-5dc7a86e",
+   "at": "13:57:47"
+  },
+  {
+   "step": 123,
+   "path": "vnmoorthy/run-c153d81b2a414515ab6159258492b429/rr-s0123-5dc7a86e",
+   "at": "14:06:58"
+  }
+ ]
+}

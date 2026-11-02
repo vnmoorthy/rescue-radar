@@ -1,0 +1,7 @@
+{
+ "model": "accounts/fireworks/models/nvidia-nemotron-3p5-super-vl-120b-a12b-bf16",
+ "checkpoint": null,
+ "name": "Nemotron 3.5 Super (base, no fine-tuning)",
+ "wall_secs": 89.4,
+ "n": 3001
+}

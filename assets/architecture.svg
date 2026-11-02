@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" role="img" aria-labelledby="t d">
+<title id="t">Rescue Radar architecture</title>
+<desc id="d">Offline: HumAID data is split by disaster, a LoRA adapter for NVIDIA Nemotron 3.5 Super is trained on Fireworks serverless training, and every system is scored on unseen 2019 disasters. Online: posts flow through the FastAPI server to the same model on Fireworks serverless sampling; rescue-critical posts go to a priority queue after PII redaction and geocoding; a human dispatcher decides.</desc>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748B"/></marker><marker id="arc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2DD4BF"/></marker><linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1324"/><stop offset="1" stop-color="#0A1020"/></linearGradient></defs>
+<rect x="0" y="0" width="1280" height="900" rx="22" fill="url(#card)" stroke="#1E293B" stroke-width="2"/>
+<text x="48" y="62" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="28" font-weight="800" fill="#F1F5F9">How Rescue Radar works</text>
+<text x="48" y="92" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15.5" fill="#94A3B8">Same prompt, same weights, same code path for the benchmark and the live console: what was scored is what the dispatcher sees.</text>
+<circle cx="54" cy="122" r="5.5" fill="#A78BFA"/>
+<text x="66" y="127" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#CBD5E1">Fireworks AI</text>
+<circle cx="175.2" cy="122" r="5.5" fill="#76B900"/>
+<text x="187.2" y="127" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#CBD5E1">NVIDIA</text>
+<circle cx="250.79999999999998" cy="122" r="5.5" fill="#38BDF8"/>
+<text x="262.79999999999995" y="127" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#CBD5E1">Microsoft</text>
+<circle cx="349.2" cy="122" r="5.5" fill="#F4A27A"/>
+<text x="361.2" y="127" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#CBD5E1">Anthropic</text>
+<circle cx="447.59999999999997" cy="122" r="5.5" fill="#FBBF24"/>
+<text x="459.59999999999997" y="127" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#CBD5E1">QCRI HumAID</text>
+<circle cx="561.1999999999999" cy="122" r="5.5" fill="#F87171"/>
+<text x="573.1999999999999" y="127" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#CBD5E1">Human</text>
+<rect x="28" y="150" width="1224" height="262" rx="16" fill="#0E1729" stroke="#1C2A44" stroke-dasharray="0"/>
+<text x="48" y="176" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="12.5" font-weight="700" letter-spacing="2.2" fill="#A78BFA">TRAIN AND PROVE  ·  OFFLINE</text>
+<rect x="48" y="192" width="178" height="200" rx="12" fill="#121D33" stroke="#5B4A1E" stroke-width="1.4"/>
+<text x="62" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">HumAID</text>
+<text x="62" y="242.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Human-labeled tweets</text>
+<text x="62" y="260.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">from disasters in</text>
+<text x="62" y="279.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">2016 to 2019, in 10</text>
+<text x="62" y="297.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">humanitarian categories</text>
+<rect x="62" y="364" width="88.6" height="18" rx="9" fill="#FBBF24" fill-opacity=".14" stroke="#FBBF24" stroke-opacity=".7"/>
+<text x="106.3" y="377" text-anchor="middle" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#FBBF24">QCRI HumAID</text>
+<rect x="248" y="192" width="178" height="200" rx="12" fill="#121D33" stroke="#334155" stroke-width="1.4"/>
+<text x="262" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">rr.prep</text>
+<text x="262" y="242.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Split by disaster:</text>
+<text x="262" y="260.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">train 2016 to 2018,</text>
+<text x="262" y="279.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">test on unseen 2019</text>
+<text x="262" y="297.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Drop train tweets that</text>
+<text x="262" y="316.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">also appear in test</text>
+<rect x="448" y="192" width="178" height="200" rx="12" fill="#121D33" stroke="#4C3D8F" stroke-width="1.4"/>
+<text x="462" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">rr.train</text>
+<text x="462" y="242.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">LoRA SFT on Fireworks</text>
+<text x="462" y="260.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">serverless training</text>
+<text x="462" y="279.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Base: NVIDIA Nemotron</text>
+<text x="462" y="297.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">3.5 Super</text>
+<text x="462" y="316.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Loss on label tokens</text>
+<rect x="462" y="364" width="95.2" height="18" rx="9" fill="#A78BFA" fill-opacity=".14" stroke="#A78BFA" stroke-opacity=".7"/>
+<text x="509.6" y="377" text-anchor="middle" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#A78BFA">Fireworks AI</text>
+<rect x="563.2" y="364" width="55.6" height="18" rx="9" fill="#76B900" fill-opacity=".14" stroke="#76B900" stroke-opacity=".7"/>
+<text x="591" y="377" text-anchor="middle" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#76B900">NVIDIA</text>
+<rect x="648" y="192" width="178" height="200" rx="12" fill="#121D33" stroke="#334155" stroke-width="1.4"/>
+<text x="662" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">predict</text>
+<text x="662" y="242.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">rr.run_model: LoRA and</text>
+<text x="662" y="260.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">base Nemotron through</text>
+<text x="662" y="279.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Fireworks sampling</text>
+<text x="662" y="297.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">rr.baseline: Claude</text>
+<text x="662" y="316.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Opus 5.5, 0 and 20-shot</text>
+<rect x="662" y="364" width="95.2" height="18" rx="9" fill="#A78BFA" fill-opacity=".14" stroke="#A78BFA" stroke-opacity=".7"/>
+<text x="709.6" y="377" text-anchor="middle" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#A78BFA">Fireworks AI</text>
+<rect x="763.2" y="364" width="75.4" height="18" rx="9" fill="#F4A27A" fill-opacity=".14" stroke="#F4A27A" stroke-opacity=".7"/>
+<text x="800.9" y="377" text-anchor="middle" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#F4A27A">Anthropic</text>
+<rect x="848" y="192" width="178" height="200" rx="12" fill="#121D33" stroke="#334155" stroke-width="1.4"/>
+<text x="862" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">rr.evaluate</text>
+<text x="862" y="242.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Macro-F1, accuracy,</text>
+<text x="862" y="260.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">rescue-critical recall,</text>
+<text x="862" y="279.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">latency, cost per post</text>
+<text x="862" y="297.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Exact McNemar + paired</text>
+<text x="862" y="316.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">bootstrap by disaster</text>
+<rect x="1048" y="192" width="178" height="200" rx="12" fill="#121D33" stroke="#334155" stroke-width="1.4"/>
+<text x="1062" y="219" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">metrics.json</text>
+<text x="1062" y="242.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">results/metrics.json</text>
+<text x="1062" y="260.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">feeds the README, the</text>
+<text x="1062" y="279.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">console's Benchmark</text>
+<text x="1062" y="297.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">view and the deck,</text>
+<text x="1062" y="316.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">rendered at build time</text>
+<path d="M226,292 L244,292" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M426,292 L444,292" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M626,292 L644,292" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M826,292 L844,292" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M1026,292 L1044,292" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<rect x="28" y="438" width="1224" height="282" rx="16" fill="#0E1729" stroke="#1C2A44" stroke-dasharray="0"/>
+<text x="48" y="464" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="12.5" font-weight="700" letter-spacing="2.2" fill="#2DD4BF">TRIAGE IN REAL TIME  ·  ONLINE</text>
+<rect x="48" y="480" width="178" height="214" rx="12" fill="#121D33" stroke="#334155" stroke-width="1.4"/>
+<text x="62" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">posts</text>
+<text x="62" y="530.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Live posts, or a replay</text>
+<text x="62" y="548.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">of the 2019 disasters</text>
+<text x="62" y="567.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">in original order</text>
+<text x="62" y="585.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">(time decoded from</text>
+<text x="62" y="604.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">the tweet ID)</text>
+<rect x="248" y="480" width="178" height="214" rx="12" fill="#121D33" stroke="#334155" stroke-width="1.4"/>
+<text x="262" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">rr.server</text>
+<text x="262" y="530.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">FastAPI + console</text>
+<text x="262" y="548.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">/api/classify</text>
+<text x="262" y="567.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">/api/replay</text>
+<text x="262" y="585.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">/api/queue</text>
+<text x="262" y="604.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">/api/compare</text>
+<rect x="448" y="480" width="178" height="214" rx="12" fill="#121D33" stroke="#4C3D8F" stroke-width="1.4"/>
+<text x="462" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">rr.infer</text>
+<text x="462" y="530.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Fireworks serverless</text>
+<text x="462" y="548.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">sampling, LoRA on</text>
+<text x="462" y="567.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Nemotron 3.5 Super</text>
+<text x="462" y="585.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">temperature 0</text>
+<text x="462" y="604.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">one label per post</text>
+<rect x="462" y="666" width="95.2" height="18" rx="9" fill="#A78BFA" fill-opacity=".14" stroke="#A78BFA" stroke-opacity=".7"/>
+<text x="509.6" y="679" text-anchor="middle" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#A78BFA">Fireworks AI</text>
+<rect x="563.2" y="666" width="55.6" height="18" rx="9" fill="#76B900" fill-opacity=".14" stroke="#76B900" stroke-opacity=".7"/>
+<text x="591" y="679" text-anchor="middle" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#76B900">NVIDIA</text>
+<rect x="648" y="480" width="178" height="214" rx="12" fill="#121D33" stroke="#7F1D1D" stroke-width="1.4"/>
+<text x="662" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">route</text>
+<text x="662" y="530.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Rescue-critical?</text>
+<text x="662" y="548.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">requests or urgent</text>
+<text x="662" y="567.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">needs, injured or dead,</text>
+<text x="662" y="585.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">missing or found</text>
+<text x="662" y="604.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">yes: priority queue</text>
+<rect x="848" y="480" width="178" height="214" rx="12" fill="#121D33" stroke="#0C4A6E" stroke-width="1.4"/>
+<text x="862" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">rr.scrub + geo</text>
+<text x="862" y="530.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">PII redaction before</text>
+<text x="862" y="548.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">a human reads a post</text>
+<text x="862" y="567.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">(Microsoft Presidio,</text>
+<text x="862" y="585.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">regex fallback)</text>
+<text x="862" y="604.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Gazetteer: place to map</text>
+<rect x="862" y="666" width="75.4" height="18" rx="9" fill="#38BDF8" fill-opacity=".14" stroke="#38BDF8" stroke-opacity=".7"/>
+<text x="899.7" y="679" text-anchor="middle" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#38BDF8">Microsoft</text>
+<rect x="1048" y="480" width="178" height="214" rx="12" fill="#121D33" stroke="#7F1D1D" stroke-width="1.4"/>
+<text x="1062" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="700" fill="#F1F5F9">console</text>
+<text x="1062" y="530.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Map, live feed and</text>
+<text x="1062" y="548.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">priority queue</text>
+<text x="1062" y="567.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Dispatch, resolve or</text>
+<text x="1062" y="585.5" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">dismiss; CSV export</text>
+<text x="1062" y="604.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">A human decides</text>
+<rect x="1062" y="666" width="49" height="18" rx="9" fill="#F87171" fill-opacity=".14" stroke="#F87171" stroke-opacity=".7"/>
+<text x="1086.5" y="679" text-anchor="middle" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#F87171">Human</text>
+<path d="M226,587 L244,587" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M426,587 L444,587" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M626,587 L644,587" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M826,587 L844,587" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M1026,587 L1044,587" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#ar)"/>
+<path d="M537,394 L537,476" stroke="#2DD4BF" stroke-width="1.8" fill="none" stroke-dasharray="5 5" marker-end="url(#arc)"/>
+<text x="547.0" y="441.0" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#5EEAD4">same LoRA weights, same prompt</text>
+<path d="M1137,394 L1137,476" stroke="#64748B" stroke-width="1.8" fill="none" stroke-dasharray="5 5" marker-end="url(#ar)"/>
+<text x="1127.0" y="441.0" text-anchor="end" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94A3B8">Benchmark view</text>
+<rect x="28" y="746" width="1224" height="128" rx="16" fill="#0E1729" stroke="#1C2A44" stroke-dasharray="0"/>
+<text x="48" y="772" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="12.5" font-weight="700" letter-spacing="2.2" fill="#FBBF24">SHIP</text>
+<rect x="48" y="784" width="380" height="76" rx="12" fill="#121D33" stroke="#334155" stroke-width="1.4"/>
+<text x="64" y="810" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" font-weight="700" fill="#F1F5F9">scripts/export_static.py</text>
+<text x="64" y="831" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">docs/ on GitHub Pages: the console</text>
+<text x="64" y="849" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">replaying recorded predictions, plus the deck</text>
+<rect x="450" y="784" width="380" height="76" rx="12" fill="#121D33" stroke="#334155" stroke-width="1.4"/>
+<text x="466" y="810" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" font-weight="700" fill="#F1F5F9">scripts/render_docs.py</text>
+<text x="466" y="831" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">README and guides rendered from</text>
+<text x="466" y="849" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">results/metrics.json: no hand-typed numbers</text>
+<rect x="852" y="784" width="380" height="76" rx="12" fill="#121D33" stroke="#334155" stroke-width="1.4" stroke-dasharray="6 5"/>
+<text x="868" y="810" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" font-weight="700" fill="#F1F5F9">rr.promote  →  next steps</text>
+<text x="868" y="831" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">Promote the adapter to a Fireworks model;</text>
+<text x="868" y="849" font-family="Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.8" fill="#A3B1C6">dedicated deployment or Microsoft Foundry</text>
+</svg>

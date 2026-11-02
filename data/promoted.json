@@ -1,0 +1,7 @@
+{
+ "model": "accounts/vnmoorthy/models/rescue-radar-nemotron-quick",
+ "from_checkpoint": "accounts/vnmoorthy/trainingSessions/ts-b3b9dd825f194d349e5d117fc5e98411/checkpoints/run-c153d81b2a414515ab6159258492b429-rr-s0123-5dc7a86e",
+ "step": 123,
+ "base_model": "accounts/fireworks/models/nvidia-nemotron-3p5-super-vl-120b-a12b-bf16",
+ "state": "READY"
+}

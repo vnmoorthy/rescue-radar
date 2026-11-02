@@ -1,0 +1,26 @@
+{
+  "description": "Finds the people asking for rescue in the flood of disaster posts, in real time. NVIDIA Nemotron 3.5 Super fine-tuned with LoRA on Fireworks AI, tested on 2019 disasters it never saw against Claude Opus 5.5, with PII redaction and a human-in-the-loop dispatch console.",
+  "homepage": "https://vnmoorthy.github.io/rescue-radar/",
+  "topics": [
+    "disaster-response",
+    "crisis-informatics",
+    "humanitarian-ai",
+    "emergency-management",
+    "fireworks-ai",
+    "nvidia-nemotron",
+    "nemotron",
+    "lora",
+    "fine-tuning",
+    "llm",
+    "text-classification",
+    "nlp",
+    "social-media",
+    "twitter-data",
+    "humaid",
+    "pii-redaction",
+    "presidio",
+    "fastapi",
+    "ai-for-good",
+    "hackathon"
+  ]
+}

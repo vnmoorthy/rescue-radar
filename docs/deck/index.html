@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescue Radar Deck</title>
+<meta name="description" content="Rescue Radar pitch deck: a fine-tuned open model that finds rescue requests in disaster social media. Numbers load at runtime from ../data/results.json.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%230a1017%27 stroke=%27%234fb3d9%27 stroke-width=%272%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%275%27 fill=%27%23ff5a4a%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#0a1017; --bg2:#0d151e; --panel:#101a24; --panel2:#14212e; --line:#1f2e3d; --line2:#2b3e52;
+  --text:#e8eef4; --muted:#95a6b8; --dim:#5f7084;
+  --red:#ff5a4a; --red2:#ff7d3b; --orange:#ffa83d;
+  --accent:#4fb3d9; --accent-ink:#04121a;
+  --opus:#c9d3dd; --opus0:#8695a7; --base:#566679;
+  --display:"Big Shoulders Display","Barlow Condensed","Arial Narrow",Impact,sans-serif;
+  --sans:"Public Sans","Helvetica Neue",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.2,.75,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#04070b;color:var(--text);overflow:hidden}
+body{font-family:var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+#viewport{position:fixed;inset:0;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#0b141d 0%,#04070b 72%)}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform:translate(-50%,-50%);transform-origin:50% 50%;
+  background:var(--bg);overflow:hidden;box-shadow:0 30px 120px rgba(0,0,0,.6);user-select:none;-webkit-user-select:none}
+#stage::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(130,170,210,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(130,170,210,.045) 1px,transparent 1px);
+  background-size:40px 40px}
+#stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.45) 100%)}
+.slide{position:absolute;inset:0;padding:60px 96px 90px;opacity:0;visibility:hidden;transform:scale(1.012);z-index:1;
+  transition:opacity .5s ease,transform .7s var(--ease),visibility 0s linear .5s}
+.slide.active{opacity:1;visibility:visible;transform:none;z-index:2;transition:opacity .5s ease,transform .7s var(--ease),visibility 0s}
+.r{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease),transform .7s var(--ease);transition-delay:calc(var(--i,0) * 110ms + 140ms)}
+.slide.active .r{opacity:1;transform:none}
+.slide:not(.active) .r,.slide:not(.active) .r *{transition:none!important}
+.kicker{font:500 15px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:12px}
+.kicker::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(79,179,217,.15)}
+.title{font-family:var(--display);font-weight:800;font-size:78px;line-height:.94;letter-spacing:.005em;text-transform:uppercase;margin-top:18px}
+.title.sm{font-size:60px}
+.title em,.mega em{font-style:normal;color:var(--red)}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.pending-txt{color:var(--dim)}
+.chip{display:inline-flex;align-items:center;gap:6px;font:600 12px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;
+  padding:6px 9px;border-radius:5px;background:#1a2734;color:#b7c4d1;border:1px solid #26384a;white-space:nowrap}
+.chip.crit{background:rgba(255,90,74,.14);color:#ff8f8f;border-color:rgba(255,90,74,.45)}
+.chip.c-injured{background:rgba(255,125,59,.14);color:#ffa27f;border-color:rgba(255,125,59,.45)}
+.chip.c-missing{background:rgba(255,168,61,.14);color:#ffbf80;border-color:rgba(255,168,61,.45)}
+.chip.crit::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* HUD */
+#hud{position:absolute;left:0;right:0;bottom:0;height:60px;padding:0 36px;display:flex;align-items:center;justify-content:space-between;z-index:30;
+  font:500 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+#hud .brand{display:flex;align-items:center;gap:10px}
+#hud .brand i{width:8px;height:8px;border-radius:50%;background:var(--red);animation:blink 1.6s ease-in-out infinite}
+#hud .ctrl{display:flex;align-items:center;gap:8px}
+#hud button{all:unset;cursor:pointer;width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:var(--muted);border:1px solid var(--line);background:rgba(16,26,36,.8)}
+#hud button:hover{color:var(--text);border-color:var(--line2)}
+#hud button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#counter{min-width:84px;text-align:center;color:var(--muted)}
+#counter b{color:var(--text);font-weight:700}
+#progress{position:absolute;left:0;bottom:0;height:3px;background:var(--accent);width:0;transition:width .6s var(--ease);z-index:31}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* radar */
+.radar{position:absolute;border-radius:50%;overflow:hidden;
+  background:radial-gradient(circle,rgba(79,179,217,.06) 0%,rgba(10,16,23,0) 70%)}
+.radar .rings{position:absolute;inset:0;border-radius:50%;
+  background:repeating-radial-gradient(circle,transparent 0 59px,rgba(79,179,217,.2) 59px 60px);border:1px solid rgba(79,179,217,.35)}
+.radar .cross{position:absolute;inset:0;background:linear-gradient(90deg,transparent calc(50% - .5px),rgba(79,179,217,.18) calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px)),
+  linear-gradient(0deg,transparent calc(50% - .5px),rgba(79,179,217,.18) calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px))}
+.radar .sweep{position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg,rgba(79,179,217,0) 0deg,rgba(79,179,217,0) 280deg,rgba(79,179,217,.32) 358deg,rgba(79,179,217,.85) 359.5deg,rgba(79,179,217,0) 360deg);
+  animation:sweep 4s linear infinite}
+@keyframes sweep{to{transform:rotate(360deg)}}
+.blip{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--accent);opacity:0;animation:blipA 4s linear infinite}
+.blip.crit{background:var(--red);width:14px;height:14px;margin:-7px 0 0 -7px;box-shadow:0 0 16px rgba(255,90,74,.8)}
+@keyframes blipA{0%{opacity:1;transform:scale(1.5)}12%{opacity:.9;transform:scale(1)}70%{opacity:.18}100%{opacity:0}}
+.radar.intro{transform:scale(.6);opacity:0;transition:transform 1.4s var(--ease),opacity 1s ease}
+.slide.active .radar.intro{transform:none;opacity:1}
+
+/* slide 1 */
+.s1 .radar{width:720px;height:720px;right:-90px;top:70px}
+.s1 .col{position:relative;width:860px;z-index:2;padding-top:40px}
+.mega{font-family:var(--display);font-weight:900;font-size:192px;line-height:.8;letter-spacing:-.005em;text-transform:uppercase;margin-top:26px}
+.lede{font-size:27px;line-height:1.38;color:#c6d2de;max-width:760px;margin-top:24px}
+.post{margin-top:30px;max-width:760px;background:rgba(16,26,36,.92);border:1px solid var(--line2);border-radius:14px;padding:22px 26px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.post .meta{display:flex;align-items:center;gap:10px;font:500 13px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.post .meta i{width:9px;height:9px;border-radius:50%;background:var(--red);animation:blink 1.2s infinite}
+.post p{font-size:22px;line-height:1.4;margin-top:12px;min-height:62px;color:#f2f6fa}
+.post p.caret::after{content:"";display:inline-block;width:2px;height:1.05em;background:var(--accent);margin-left:3px;vertical-align:-3px;animation:blink .8s steps(1) infinite}
+.post .lab{margin-top:16px;display:flex;align-items:center;gap:10px;font:500 13px/1 var(--mono);color:var(--muted);opacity:0;transition:opacity .5s ease}
+.post .lab.on{opacity:1}
+
+/* slide 2 */
+.grid2{display:grid;grid-template-columns:1fr 600px;gap:64px;margin-top:44px}
+.beats{list-style:none;display:flex;flex-direction:column;gap:30px}
+.beats li{display:grid;grid-template-columns:76px 1fr;gap:18px;align-items:start}
+.beats b{font:800 54px/1 var(--display);color:var(--dim)}
+.beats li:last-child b{color:var(--red)}
+.beats h3{font:700 30px/1.15 var(--sans);letter-spacing:-.01em}
+.beats p{font-size:21px;line-height:1.45;color:var(--muted);margin-top:8px;max-width:640px}
+.hose{position:relative;height:530px;border:1px solid var(--line);border-radius:14px;background:var(--bg2);overflow:hidden}
+.hose .stream{position:absolute;left:0;right:0;top:0;padding:16px 18px;display:flex;flex-direction:column;gap:9px;animation:scrollUp 60s linear infinite}
+.slide:not(.active) .hose .stream{animation-play-state:paused}
+@keyframes scrollUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.hose .ln{font:400 14px/1.4 var(--mono);color:#6f8297;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,.02)}
+.hose .ln.crit{color:#ffb3a8;background:rgba(255,90,74,.1);box-shadow:inset 3px 0 0 var(--red)}
+.hose .ph{color:var(--dim);font:500 15px/1.5 var(--mono);padding:24px}
+.hose .fade{position:absolute;left:0;right:0;height:120px;pointer-events:none}
+.hose .fade.t{top:0;background:linear-gradient(var(--bg2),transparent)}
+.hose .fade.b{bottom:0;height:300px;background:linear-gradient(transparent,var(--bg2) 62%)}
+.hose .stats{position:absolute;left:0;right:0;bottom:0;padding:22px 26px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.stat .num{display:block;font:800 64px/1 var(--display);letter-spacing:.01em}
+.stat .lbl{display:block;font-size:16px;line-height:1.35;color:var(--muted);margin-top:6px}
+.stat.crit .num{color:var(--red)}
+
+/* slide 3 */
+.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:48px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px 30px 34px;min-height:290px}
+.ico{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:rgba(79,179,217,.1);color:var(--accent);margin-bottom:22px}
+.ico svg{width:28px;height:28px}
+.card h3{font:700 28px/1.15 var(--sans);letter-spacing:-.01em}
+.card p{font-size:19px;line-height:1.5;color:var(--muted);margin-top:12px}
+.jtbd{margin-top:34px;display:grid;grid-template-columns:220px 1fr;gap:28px;align-items:center;padding:28px 34px;border-radius:16px;
+  background:linear-gradient(90deg,rgba(255,90,74,.12),rgba(255,90,74,.02));border:1px solid rgba(255,90,74,.3)}
+.jtbd span{font:600 14px/1.4 var(--mono);letter-spacing:.18em;color:#ff9b9b;text-transform:uppercase}
+.jtbd p{font-size:27px;line-height:1.38;color:#f5f8fb}
+
+/* slide 4: console mock */
+.console{margin-top:28px;height:640px;border:1px solid var(--line2);border-radius:16px;background:#0b131b;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+.c-head{height:50px;flex:none;display:flex;align-items:center;gap:18px;padding:0 20px;border-bottom:1px solid var(--line);background:#0e1822;font:500 13px/1 var(--mono);color:var(--muted);letter-spacing:.06em}
+.c-head .live{display:flex;align-items:center;gap:8px;color:#ff8f8f;font-weight:700;letter-spacing:.16em}
+.c-head .live i{width:8px;height:8px;border-radius:50%;background:var(--red);animation:blink 1s infinite}
+.c-head .ev{color:var(--text);font-weight:700}
+.c-head .sp{flex:1}
+.c-body{flex:1;display:grid;grid-template-columns:420px 1fr 380px;min-height:0}
+.c-pane{min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.c-pane+.c-pane{border-left:1px solid var(--line)}
+.c-title{flex:none;padding:14px 18px 10px;font:600 12px/1 var(--mono);letter-spacing:.18em;color:var(--dim);display:flex;justify-content:space-between}
+.c-title b{color:var(--red)}
+#feed,#queue{flex:1;min-height:0;overflow:hidden;padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
+.f-item{padding:11px 13px;border-radius:9px;background:#111c26;border:1px solid #1b2936;animation:slideIn .45s var(--ease)}
+.f-item.crit{border-color:rgba(255,90,74,.4);background:linear-gradient(90deg,rgba(255,90,74,.1),#111c26 60%)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+.f-top{display:flex;gap:10px;font:500 11px/1 var(--mono);color:var(--dim);margin-bottom:6px;letter-spacing:.04em}
+.f-top .pl{color:#9fb0c2}
+.f-item p{font-size:14px;line-height:1.4;color:#d4dde6;margin-bottom:8px}
+.q-item{display:grid;grid-template-columns:30px 1fr;gap:10px;padding:12px 12px;border-radius:9px;background:#141d27;border:1px solid rgba(255,90,74,.32);animation:slideIn .45s var(--ease)}
+.q-item .rk{font:800 24px/1 var(--display);color:var(--red)}
+.q-item p{font-size:13.5px;line-height:1.38;color:#d4dde6;margin:6px 0 0}
+.q-item .q-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.q-item .q-meta .mono{font-size:11.5px;letter-spacing:.04em}
+.q-item .st{font:700 10.5px/1 var(--mono);letter-spacing:.14em;color:#ffb37a;border:1px solid rgba(255,168,61,.4);border-radius:4px;padding:4px 6px}
+.c-map{position:relative}
+#map{position:absolute;inset:0;width:100%;height:100%}
+.map-cap{position:absolute;left:14px;bottom:12px;font:500 11.5px/1.4 var(--mono);color:var(--dim);letter-spacing:.04em;max-width:90%}
+.map-empty{position:absolute;inset:0;display:grid;place-items:center;font:500 15px/1.5 var(--mono);color:var(--dim);text-align:center;padding:40px}
+.grat{stroke:rgba(130,170,210,.09);stroke-width:1}
+.grat-l{fill:#3f5063;font:500 10px var(--mono)}
+.ring{fill:none;stroke:rgba(79,179,217,.16);stroke-dasharray:3 6}
+.dot{fill:#4b5d71}
+.pin{opacity:0;transition:opacity .5s ease}
+.slide.active .pin{opacity:1;transition-delay:var(--d)}
+.pin .core{fill:var(--red);stroke:#2a0b0b;stroke-width:1.5}
+.pin .halo{fill:none;stroke:var(--red);stroke-width:2;transform-box:fill-box;transform-origin:center;animation:pulse 2.4s ease-out infinite;animation-delay:var(--pd)}
+.pin.c-injured .core{fill:var(--red2)} .pin.c-injured .halo{stroke:var(--red2)}
+.pin.c-missing .core{fill:var(--orange)} .pin.c-missing .halo{stroke:var(--orange)}
+.pin.ping .core{animation:ping .9s ease-out}
+@keyframes pulse{0%{transform:scale(.7);opacity:.95}100%{transform:scale(3.4);opacity:0}}
+@keyframes ping{0%{transform:scale(2.2)}100%{transform:scale(1)}}
+.pin .core{transform-box:fill-box;transform-origin:center}
+.plab{fill:#c9d4df;font:600 11px var(--mono);paint-order:stroke;stroke:#0b131b;stroke-width:4px;stroke-linejoin:round}
+
+/* slide 5 */
+.pipe{position:relative;margin-top:56px;display:grid;grid-template-columns:repeat(6,1fr);gap:22px}
+.pipe .wire{position:absolute;left:5%;right:5%;top:46px;height:2px;background:repeating-linear-gradient(90deg,var(--line2) 0 8px,transparent 8px 14px)}
+.pipe .packet{position:absolute;top:40px;left:5%;width:14px;height:14px;border-radius:50%;background:var(--red);box-shadow:0 0 18px rgba(255,90,74,.9);opacity:0}
+.slide.active .pipe .packet{animation:travel 3.6s var(--ease) 1.2s infinite}
+@keyframes travel{0%{left:5%;opacity:0}6%{opacity:1}88%{opacity:1}100%{left:94%;opacity:0}}
+.node{position:relative;text-align:left}
+.node .ic{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line2);color:var(--muted);position:relative;z-index:1}
+.node .ic svg{width:36px;height:36px}
+.node.hot .ic{background:rgba(79,179,217,.12);border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 8px rgba(79,179,217,.06)}
+.node.human .ic{color:var(--red);border-color:rgba(255,90,74,.5)}
+.node h4{font:700 22px/1.2 var(--sans);margin-top:18px}
+.node p{font-size:15.5px;line-height:1.45;color:var(--muted);margin-top:6px}
+.train{margin-top:44px;padding:24px 28px;border:1px solid var(--line);border-radius:16px;background:var(--panel);display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.train .st{padding:0 22px;position:relative}
+.train .st+.st{border-left:1px dashed var(--line2)}
+.train .st:first-child{padding-left:0}
+.train .k{font:600 12px/1 var(--mono);letter-spacing:.16em;color:var(--accent);text-transform:uppercase}
+.train .v{font:800 34px/1.05 var(--display);margin-top:10px;text-transform:uppercase}
+.train .d{font-size:15px;line-height:1.45;color:var(--muted);margin-top:8px}
+
+/* slide 6: timeline */
+.tl{position:relative;margin-top:24px;height:318px}
+.tl svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.tl-line{stroke:var(--line2);stroke-width:3;stroke-dasharray:1400;stroke-dashoffset:1400;transition:stroke-dashoffset 1.8s var(--ease) .3s}
+.tl-line.test{stroke:var(--orange);stroke-dasharray:300;stroke-dashoffset:300;transition-delay:2s}
+.slide.active .tl-line{stroke-dashoffset:0}
+.slide:not(.active) .tl-line{transition:none}
+.tl .yr{position:absolute;top:100px;font:800 46px/1 var(--display);color:var(--dim);transform:translateX(-50%)}
+.tl .yr.test{color:var(--orange)}
+.tl .tick{position:absolute;top:80px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--bg);border:3px solid var(--line2)}
+.tl .tick.test{border-color:var(--orange);box-shadow:0 0 0 6px rgba(255,168,61,.15)}
+.tl .evs{position:absolute;top:156px;width:300px;transform:translateX(-50%);display:flex;flex-direction:column;gap:5px;align-items:center}
+.tl .ev{font:500 13.5px/1.15 var(--mono);color:#8fa1b4;padding:4px 9px;border-radius:5px;background:rgba(255,255,255,.03);border:1px solid var(--line);white-space:nowrap}
+.tl .ev.test{color:#ffd0a6;border-color:rgba(255,168,61,.45);background:rgba(255,168,61,.08);display:flex;gap:10px;justify-content:space-between;min-width:270px}
+.tl .ev.test b{color:#fff;font-weight:700}
+.tl .wall{position:absolute;top:8px;bottom:0;width:0;border-left:2px dashed rgba(255,168,61,.55)}
+.tl .wall span{position:absolute;top:-6px;left:12px;font:700 12px/1.3 var(--mono);letter-spacing:.16em;color:var(--orange);white-space:nowrap}
+.tl .band{position:absolute;top:22px;font:600 13px/1 var(--mono);letter-spacing:.18em;color:var(--accent);transform:translateX(-50%);white-space:nowrap}
+.tiles{display:grid;grid-template-columns:repeat(3,260px) 1fr;gap:22px;margin-top:22px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+.tile .num{font:800 58px/1 var(--display)}
+.tile .lbl{font-size:15px;line-height:1.4;color:var(--muted);margin-top:6px}
+.tile.sys .lbl{margin-top:0}
+.tile.sys ul{list-style:none;margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+.tile.sys li{font:500 14px/1.35 var(--mono);color:#c3cfdb;display:flex;align-items:center;gap:8px}
+.tile.sys li i{width:10px;height:10px;border-radius:3px;flex:none}
+
+/* slide 7: results */
+.res{display:grid;grid-template-columns:420px 1fr;gap:48px;margin-top:26px}
+.big .num{font:900 96px/.9 var(--display);color:var(--accent);letter-spacing:-.01em;white-space:nowrap}
+.big .num.neg{color:var(--opus)}
+.big .num.mid{font-size:72px;margin-top:22px}
+.big .num.pending-txt{color:var(--dim)}
+.big .cap{font-size:18px;line-height:1.4;color:#c6d2de;margin-top:10px}
+.big .sub{font:500 14px/1.5 var(--mono);color:var(--dim);margin-top:16px}
+.bars{display:flex;flex-direction:column;gap:14px}
+.bg-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.bg-title{font:700 21px/1 var(--sans)}
+.bg-title.crit{color:#ff8f8f}
+.bg-sub{font-size:14px;color:var(--dim)}
+.brow{display:grid;grid-template-columns:190px 1fr 190px;gap:16px;align-items:center;height:24px}
+.bname{font:500 13.5px/1 var(--mono);color:#a9b7c6;white-space:nowrap}
+.brow.ours .bname{color:var(--accent);font-weight:700}
+.track{position:relative;height:16px;border-radius:4px;background:rgba(255,255,255,.04)}
+.track i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:4px;background:var(--base);transition:width 1.3s var(--ease);transition-delay:var(--d)}
+.slide.active .track i{width:var(--w)}
+.slide:not(.active) .track i{transition:none}
+.brow.ours .track i{background:var(--accent)}
+.brow.opus .track i{background:var(--opus)}
+.brow.opus0 .track i{background:var(--opus0)}
+.track .whisk{position:absolute;top:-5px;bottom:-5px;border-left:2px solid #fff;border-right:2px solid #fff;opacity:0;transition:opacity .5s ease;transition-delay:var(--d)}
+.track .whisk::after{content:"";position:absolute;left:0;right:0;top:50%;border-top:2px solid #fff}
+.slide.active .track .whisk{opacity:.85}
+.bval{font:700 15px/1 var(--mono);color:var(--text);white-space:nowrap}
+.bval small{font-weight:400;font-size:12px;color:var(--dim);margin-left:6px}
+.sig{margin-top:20px;padding:16px 22px;border-radius:14px;background:var(--panel);border:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.sig h5{font:600 12px/1 var(--mono);letter-spacing:.18em;color:var(--accent);text-transform:uppercase;margin-bottom:9px}
+.sig p{font-size:15px;line-height:1.45;color:#c6d2de}
+.stamp{display:none;position:absolute;right:96px;top:70px;font:700 14px/1 var(--mono);letter-spacing:.18em;color:var(--orange);border:1px solid rgba(255,168,61,.5);padding:10px 14px;border-radius:6px}
+body.pending .stamp{display:block}
+
+/* slide 8 */
+.sc{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:40px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px 30px}
+.panel h3{display:flex;align-items:center;justify-content:space-between;font:700 26px/1 var(--sans)}
+.tag{font:700 11.5px/1 var(--mono);letter-spacing:.16em;padding:6px 9px;border-radius:5px;border:1px solid}
+.tag.m{color:var(--accent);border-color:rgba(79,179,217,.5);background:rgba(79,179,217,.08)}
+.tag.e{color:#ffc48a;border-color:rgba(255,168,61,.5);background:rgba(255,168,61,.08)}
+.tag.p{color:var(--dim);border-color:var(--line2)}
+.ratio{font:900 96px/1 var(--display);margin:22px 0 4px;color:var(--accent)}
+.ratio.neg{color:var(--opus)}
+.ratio-cap{font-size:18px;color:#c6d2de;line-height:1.4;min-height:50px}
+.lrows{margin-top:22px;display:flex;flex-direction:column;gap:12px}
+.lrow{display:grid;grid-template-columns:200px 1fr 120px;gap:14px;align-items:center}
+.lrow .bname{font-size:13px}
+.note{margin-top:18px;font:400 13px/1.55 var(--mono);color:var(--dim);border-top:1px dashed var(--line2);padding-top:14px}
+
+/* slide 9 */
+.cols3{display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:28px;margin-top:40px}
+.col3 h3{font:600 13px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+.col3.lim h3{color:var(--orange)}
+.spons{display:flex;flex-direction:column;gap:14px}
+.spon{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.spon b{display:block;font:800 30px/1 var(--display);text-transform:uppercase;letter-spacing:.02em}
+.spon span{display:block;font-size:16px;line-height:1.45;color:var(--muted);margin-top:6px}
+.lst{list-style:none;display:flex;flex-direction:column;gap:14px}
+.lst li{position:relative;padding-left:26px;font-size:18px;line-height:1.45;color:#c9d4df}
+.lst li::before{content:"";position:absolute;left:0;top:9px;width:10px;height:10px;border-radius:50%;border:2px solid var(--accent)}
+.lim .lst li::before{border-color:var(--orange)}
+.lst li b{color:var(--text)}
+
+/* slide 10 */
+.s10 .radar{width:820px;height:820px;right:-170px;top:40px;opacity:.75}
+.s10 .col{position:relative;z-index:2;width:900px}
+.asks{list-style:none;margin-top:40px;display:flex;flex-direction:column;gap:20px}
+.asks li{display:grid;grid-template-columns:56px 1fr;gap:16px;align-items:start}
+.asks li span{font:800 40px/1 var(--display);color:var(--accent)}
+.asks h4{font:700 26px/1.2 var(--sans)}
+.asks p{font-size:18px;line-height:1.45;color:var(--muted);margin-top:4px}
+.close{margin-top:40px;display:flex;gap:40px;align-items:flex-end}
+.close .team{font:800 30px/1.1 var(--display);text-transform:uppercase}
+.close .team small{display:block;font:600 12px/1 var(--mono);letter-spacing:.18em;color:var(--dim);margin-bottom:8px}
+.close a{color:var(--text);text-decoration:none;font:500 17px/1.6 var(--mono);display:block}
+.close a:hover{color:var(--accent)}
+.close a b{color:var(--accent);font-weight:500}
+@media (prefers-reduced-motion:reduce){
+  .radar .sweep,.blip,.hose .stream,.pin .halo,.slide.active .pipe .packet{animation:none!important}
+  .r{transition:opacity .3s ease!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="stage" aria-live="polite">
+
+<!-- 1. Title + hook -->
+<section class="slide s1" aria-label="Rescue Radar">
+  <div class="radar intro" id="radar1"><div class="rings"></div><div class="cross"></div><div class="sweep"></div></div>
+  <div class="col">
+    <div class="kicker r" style="--i:1">Fireworks: Deploy &middot; San Francisco</div>
+    <h1 class="mega r" style="--i:2">Rescue<br><em>Radar</em></h1>
+    <p class="lede r" style="--i:3">Reads every public post during a disaster, finds the people asking to be rescued, and puts them in a dispatcher's queue in real time.</p>
+    <div class="post r" style="--i:5" id="hook">
+      <div class="meta"><i></i><span id="hook-src">Hurricane Dorian &middot; 2019 &middot; public post &middot; PII scrubbed</span></div>
+      <p id="hook-text"></p>
+      <div class="lab" id="hook-lab"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. Problem -->
+<section class="slide" aria-label="The problem">
+  <div class="kicker r">02 &middot; The problem</div>
+  <h2 class="title r" style="--i:1">When the phones jam,<br>the pleas go <em>public</em></h2>
+  <div class="grid2">
+    <ol class="beats">
+      <li class="r" style="--i:3"><b>01</b><div><h3>Emergency lines saturate</h3><p>In a major disaster, call volume outruns 911 and emergency lines. Many callers never get through.</p></div></li>
+      <li class="r" style="--i:5"><b>02</b><div><h3>Pleas move to social media</h3><p>People post wherever someone might see it: the street, the water level, who is trapped and how long they have.</p></div></li>
+      <li class="r" style="--i:7"><b>03</b><div><h3>Nobody can read it all</h3><p>Rescue requests are a thin slice of a firehose of news, prayers and opinion. No team can triage millions of posts in time.</p></div></li>
+    </ol>
+    <div class="hose r" style="--i:4">
+      <div class="stream" id="hose"></div>
+      <div class="fade t"></div><div class="fade b"></div>
+      <div class="stats">
+        <div class="stat"><span class="num" data-bind="dorian.n_posts" data-fmt="int" data-count>pending</span><span class="lbl" id="hose-l1">posts in the Hurricane Dorian test slice</span></div>
+        <div class="stat crit"><span class="num" data-bind="dorian.crit_share" data-fmt="pct" data-count>pending</span><span class="lbl" id="hose-l2">are rescue-critical, by human label</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Who -->
+<section class="slide" aria-label="Who it is for">
+  <div class="kicker r">03 &middot; Who it is for</div>
+  <h2 class="title r" style="--i:1">Built for the people<br>who send the boats</h2>
+  <div class="cards3">
+    <div class="card r" style="--i:3"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2.5" y="13.5" width="4" height="6" rx="1.5"/><rect x="17.5" y="13.5" width="4" height="6" rx="1.5"/><path d="M19.5 19.5c0 1.5-2 2.5-5 2.5"/></svg></div>
+      <h3>Dispatchers</h3><p>911 centers and public-safety answering points that need overflow triage when the lines jam.</p></div>
+    <div class="card r" style="--i:4"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><circle cx="12" cy="10" r="2.5"/><path d="M12 6.5v1M12 12.5v1"/></svg></div>
+      <h3>Emergency operations centers</h3><p>City, county and state EOCs building one picture of who needs help, and where.</p></div>
+    <div class="card r" style="--i:5"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/><path d="M9 11h6M12 8v6"/></svg></div>
+      <h3>NGOs and volunteer rescue</h3><p>Relief organizations and volunteer boat crews that already act on public requests.</p></div>
+  </div>
+  <div class="jtbd r" style="--i:7"><span>Job to be done</span><p>When a disaster swamps our lines, help me find every public cry for rescue, see where it is, and hand it to a team before the window closes.</p></div>
+</section>
+
+<!-- 4. Product -->
+<section class="slide" aria-label="The product">
+  <div class="kicker r">04 &middot; The product</div>
+  <h2 class="title sm r" style="--i:1">A dispatch console that reads every post</h2>
+  <div class="console r" style="--i:2">
+    <div class="c-head"><span class="live"><i></i>Replay</span><span class="ev" id="c-ev">Hurricane Dorian 2019</span><span id="c-src">labels: pending</span><span class="sp"></span><span>vnmoorthy.github.io/rescue-radar</span></div>
+    <div class="c-body">
+      <div class="c-pane"><div class="c-title">Incoming posts <span id="c-rate"></span></div><div id="feed"></div></div>
+      <div class="c-pane c-map"><svg id="map" viewBox="0 0 600 590" preserveAspectRatio="xMidYMid meet" aria-label="Map of rescue-critical posts"></svg><div class="map-cap" id="map-cap"></div></div>
+      <div class="c-pane"><div class="c-title">Priority queue <b id="q-n">0</b></div><div id="queue"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. How -->
+<section class="slide" aria-label="How it works">
+  <div class="kicker r">05 &middot; How it works</div>
+  <h2 class="title r" style="--i:1">One open model,<br>fine-tuned for one job</h2>
+  <div class="pipe">
+    <div class="wire"></div><div class="packet"></div>
+    <div class="node r" style="--i:2"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 10h12M4 14h16M4 18h9"/></svg></div><h4>Posts</h4><p>A replay of recorded 2019 posts, or text pasted or uploaded</p></div>
+    <div class="node r" style="--i:3"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div><h4>PII redaction</h4><p>Best effort: names, phones, emails and handles masked before a dispatcher reads the post</p></div>
+    <div class="node hot r" style="--i:4"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/></svg></div><h4>Classify</h4><p>NVIDIA Nemotron 3.5 Super + our LoRA, served on Fireworks. 10 HumAID categories.</p></div>
+    <div class="node r" style="--i:5"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.4-6-11a6 6 0 0 1 12 0c0 5.6-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg></div><h4>Locate</h4><p>Gazetteer turns place names into map pins</p></div>
+    <div class="node r" style="--i:6"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M5 12h10M5 18h6"/><path d="M19 14v6M16.5 17.5 19 20l2.5-2.5"/></svg></div><h4>Prioritize</h4><p>Requests, injured or dead, missing or found jump the queue</p></div>
+    <div class="node human r" style="--i:7"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div><h4>A human decides</h4><p>Dispatch, resolve or dismiss. The model never sends a boat on its own.</p></div>
+  </div>
+  <div class="train r" style="--i:8">
+    <div class="st"><div class="k">Train data</div><div class="v"><span data-bind="m.eval.train_events" data-fmt="int" data-alt="trainEventsStatic">pending</span> disasters</div><div class="d">HumAID, 2016 to 2018. Look-alikes of test posts removed.</div></div>
+    <div class="st"><div class="k">Examples</div><div class="v"><span data-bind="training.examples" data-fmt="int" data-count>pending</span> posts</div><div class="d">Capped per class so rare rescue categories are not drowned out</div></div>
+    <div class="st"><div class="k">Fine-tune</div><div class="v">LoRA on Fireworks</div><div class="d">Serverless training on the open NVIDIA Nemotron 3.5 Super base</div></div>
+    <div class="st"><div class="k">Serve</div><div class="v">Same code path</div><div class="d">Fireworks serverless sampling, the same code path; the live server serves the scored checkpoint</div></div>
+  </div>
+</section>
+
+<!-- 6. Benchmark design -->
+<section class="slide" aria-label="The benchmark">
+  <div class="kicker r">06 &middot; The benchmark</div>
+  <h2 class="title r" style="--i:1">Tested on disasters<br>it has never seen</h2>
+  <div class="tl r" style="--i:2" id="tl">
+    <svg viewBox="0 0 1408 318" preserveAspectRatio="none" aria-hidden="true">
+      <line class="tl-line" x1="0" y1="87" x2="1035" y2="87"/>
+      <line class="tl-line test" x1="1035" y1="87" x2="1408" y2="87"/>
+    </svg>
+  </div>
+  <div class="tiles">
+    <div class="tile r" style="--i:6"><div class="num" data-bind="m.eval.train_events" data-fmt="int" data-alt="trainEventsStatic">pending</div><div class="lbl">training disasters, 2016 to 2018</div></div>
+    <div class="tile r" style="--i:7"><div class="num" style="color:var(--orange)" data-bind="m.eval.test_events" data-fmt="int" data-alt="testEventsStatic">pending</div><div class="lbl">unseen 2019 disasters held out for test</div></div>
+    <div class="tile r" style="--i:8"><div class="num" data-bind="m.eval.n" data-fmt="int" data-count>pending</div><div class="lbl">held-out posts; Claude answered fewer before its spending cap</div></div>
+    <div class="tile sys r" style="--i:9"><div class="lbl">Same instructions and 10 labels for every system (20-shot adds 20 examples); compared on posts both answered</div>
+      <ul><li><i style="background:var(--accent)"></i>Rescue Radar (ours)</li><li><i style="background:var(--opus)"></i>Claude Opus 5.5, 20-shot</li><li><i style="background:var(--opus0)"></i>Claude Opus 5.5, zero-shot</li><li><i style="background:var(--base)"></i>Nemotron base, no tuning</li></ul></div>
+  </div>
+</section>
+
+<!-- 7. Results -->
+<section class="slide" aria-label="Results">
+  <div class="kicker r">07 &middot; Results vs Claude Opus 5.5</div>
+  <div class="stamp">Results pending</div>
+  <h2 class="title sm r" style="--i:1" id="res-title">Fine-tuned open model vs the frontier</h2>
+  <div class="res">
+    <div class="big r" style="--i:2">
+      <div class="num" id="res-big" data-bind="cmp.macro_f1.delta" data-fmt="pts" data-count>pending</div>
+      <div class="cap" id="res-cap">macro-F1 gap vs Claude Opus 5.5 on 4 unseen disasters</div>
+      <div class="num mid" id="res-big2" data-bind="cmp.critical_recall.delta" data-fmt="pts" data-count>pending</div>
+      <div class="cap" id="res-cap2">rescue-critical recall gap: the error that costs lives</div>
+      <div class="sub">Bars: score on held-out posts. Whiskers: 95% bootstrap confidence interval. Gaps are paired on the posts both systems answered.<span id="res-dev"></span></div>
+    </div>
+    <div class="bars r" style="--i:3" id="bars"></div>
+  </div>
+  <div class="sig r" style="--i:6"><div><h5>Is the gap real? McNemar test</h5><p id="sig-mc">pending</p></div><div><h5>Bootstrap, 95% CI</h5><p id="sig-bs">pending</p></div></div>
+</section>
+
+<!-- 8. Speed and cost -->
+<section class="slide" aria-label="Speed and cost">
+  <div class="kicker r">08 &middot; Speed and cost</div>
+  <div class="stamp">Results pending</div>
+  <h2 class="title r" style="--i:1" id="t8">Speed and cost,<br>measured on every call</h2>
+  <div class="sc">
+    <div class="panel r" style="--i:3" id="p-lat"></div>
+    <div class="panel r" style="--i:4" id="p-cost"></div>
+  </div>
+</section>
+
+<!-- 9. Stack, responsible AI, limits -->
+<section class="slide" aria-label="Stack and responsibility">
+  <div class="kicker r">09 &middot; Stack, safeguards, limits</div>
+  <h2 class="title r" style="--i:1">Built to be trusted,<br>honest about where it fails</h2>
+  <div class="cols3">
+    <div class="col3 r" style="--i:3"><h3>Sponsor stack</h3>
+      <div class="spons">
+        <div class="spon"><b>Fireworks</b><span>LoRA fine-tuning on serverless training, plus serving the checkpoint</span></div>
+        <div class="spon"><b>NVIDIA</b><span>Nemotron 3.5 Super: the open-weight base model we adapt</span></div>
+        <div class="spon"><b>Microsoft</b><span>Presidio PII redaction before human review; Foundry deployment is a next step, not built yet</span></div>
+      </div></div>
+    <div class="col3 r" style="--i:4"><h3>Responsible AI</h3>
+      <ul class="lst">
+        <li><b>Human in the loop.</b> The model ranks; a person dispatches.</li>
+        <li><b>Privacy first.</b> Best-effort PII redaction before a dispatcher reads a post.</li>
+        <li><b>Open base model.</b> The LoRA adapter could be exported for self-hosting (not done yet).</li>
+        <li><b>Honest evaluation.</b> Unseen disasters, one shared prompt, confidence intervals and significance tests.</li>
+      </ul></div>
+    <div class="col3 lim r" style="--i:5"><h3>Limitations</h3>
+      <ul class="lst">
+        <li id="lim-miss"><b>It misses some.</b> Rescue-critical recall is pending, so it runs beside 911, never instead of it.</li>
+        <li id="lim-weak"><b>Weakest category:</b> pending.</li>
+        <li><b>English tweets, 2016 to 2019.</b> Other languages and platforms are not yet tested.</li>
+        <li><b>Labels are crowd-annotated.</b> Some ground truth is itself ambiguous.</li>
+      </ul></div>
+  </div>
+</section>
+
+<!-- 10. Ask / close -->
+<section class="slide s10" aria-label="What's next">
+  <div class="radar intro" id="radar10"><div class="rings"></div><div class="cross"></div><div class="sweep"></div></div>
+  <div class="col">
+    <div class="kicker r">10 &middot; What's next</div>
+    <h2 class="title r" style="--i:1">Put it in front<br>of real dispatchers</h2>
+    <ul class="asks">
+      <li class="r" style="--i:3"><span>01</span><div><h4>Dedicated Fireworks deployment</h4><p>Reserved capacity for steady low latency during a surge.</p></div></li>
+      <li class="r" style="--i:4"><span>02</span><div><h4>Microsoft Foundry for agencies</h4><p>Deploy inside the cloud tenancy public agencies already use.</p></div></li>
+      <li class="r" style="--i:5"><span>03</span><div><h4>More languages and platforms</h4><p>Spanish, Hindi, Urdu, French; beyond X to other public channels.</p></div></li>
+      <li class="r" style="--i:6"><span>04</span><div><h4>Pilot partners</h4><p>One emergency operations center and one NGO for the next storm season.</p></div></li>
+    </ul>
+    <div class="close r" style="--i:8">
+      <div class="team"><small>Team</small>vnmoorthy &amp; Seth Caldwell</div>
+      <div><a href="https://github.com/vnmoorthy/rescue-radar" target="_blank" rel="noopener"><b>repo</b> github.com/vnmoorthy/rescue-radar</a>
+      <a href="https://vnmoorthy.github.io/rescue-radar/" target="_blank" rel="noopener"><b>demo</b> vnmoorthy.github.io/rescue-radar</a></div>
+    </div>
+  </div>
+</section>
+
+<div id="hud">
+  <div class="brand"><i></i>Rescue Radar</div>
+  <div class="ctrl">
+    <button id="b-prev" aria-label="Previous slide"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <span id="counter"><b>01</b> / 10</span>
+    <button id="b-next" aria-label="Next slide"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    <button id="b-fs" aria-label="Toggle fullscreen" title="Fullscreen (F)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  </div>
+</div>
+<div id="progress"></div>
+</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var stage = $('#stage');
+  var slides = $$('.slide');
+  var N = slides.length;
+  var cur = -1;
+
+  /* ---------- constants (names and the split definition, never results) ---------- */
+  var CRIT = { requests_or_urgent_needs: 1, injured_or_dead_people: 1, missing_or_found_people: 1 };
+  var TRAIN_EVENTS = {
+    2016: ['Kaikoura earthquake', 'Ecuador earthquake', 'Canada wildfires', 'Italy earthquake', 'Hurricane Matthew'],
+    2017: ['Hurricane Harvey', 'Hurricane Irma', 'Hurricane Maria', 'Puebla earthquake', 'Sri Lanka floods'],
+    2018: ['Hurricane Florence', 'Kerala floods', 'Maryland floods', 'Greece wildfires', 'California wildfires']
+  };
+  var TEST_EVENTS = [
+    ['hurricane_dorian_2019', 'Hurricane Dorian'], ['cyclone_idai_2019', 'Cyclone Idai'],
+    ['pakistan_earthquake_2019', 'Pakistan earthquake'], ['midwestern_us_floods_2019', 'Midwest floods']
+  ];
+  var SYS = [
+    { key: 'ours', short: 'Rescue Radar' },
+    { key: 'opus_few', short: 'Opus 5.5, 20-shot' },
+    { key: 'opus_zero', short: 'Opus 5.5, zero-shot' },
+    { key: 'base_zero', short: 'Nemotron, base' }
+  ];
+
+  /* ---------- formatting ---------- */
+  function num(v) { return (typeof v === 'number' && isFinite(v)) ? v : null; }
+  var F = {
+    pct: function (x) { return (x * 100).toFixed(1) + '%'; },
+    pts: function (x) { var a = Math.abs(x * 100); return (x > 0.00049 ? '+' : (x < -0.00049 ? '−' : '')) + a.toFixed(1) + ' pts'; },
+    int: function (x) { return Math.round(x).toLocaleString('en-US'); },
+    ms: function (x) { return Math.round(x).toLocaleString('en-US') + ' ms'; },
+    usd: function (x) { return '$' + (x >= 1000 ? Math.round(x).toLocaleString('en-US') : (x >= 10 ? x.toFixed(0) : x.toFixed(2))); },
+    p: function (x) { return x < 0.001 ? 'p < 0.001' : 'p = ' + (x < 0.01 ? x.toFixed(3) : x.toFixed(2)); },
+    x: function (x) { return (x >= 10 ? x.toFixed(0) : x.toFixed(1)) + '×'; },
+    raw: function (x) { return String(x); }
+  };
+  function fmt(v, f) { v = num(v); return v === null ? 'pending' : (F[f] || F.raw)(v); }
+  function get(o, path) { return path.split('.').reduce(function (a, k) { return (a === null || a === undefined) ? undefined : a[k]; }, o); }
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined && txt !== null) e.textContent = txt; return e; }
+  function labelName(id) { if (!id) return 'n/a'; var s = String(id).replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function critCls(label) { return CRIT[label] ? ' crit c-' + String(label).split('_')[0] : ''; }
+  function chip(label) { return el('span', 'chip' + critCls(label), labelName(label)); }
+  function trunc(s, n) { return s.length > n ? s.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : s; }
+  var deco = document.createElement('textarea');
+  function scrub(t) {
+    if (!t) return '';
+    deco.innerHTML = String(t); t = deco.value;
+    return t.replace(/https?:\/\/\S+/g, '[link]')
+      .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '[email]')
+      .replace(/@\w{1,15}/g, '@[user]')
+      .replace(/\+?\d[\d\s().-]{7,}\d/g, '[phone]')
+      .replace(/\s+/g, ' ').trim();
+  }
+  function postTime(p) {
+    var t = p.ts;
+    if (typeof t === 'number' && isFinite(t)) return t < 1e12 ? t * 1000 : t;
+    if (typeof t === 'string' && t) {
+      if (/^\d+(\.\d+)?$/.test(t)) { var n = +t; return n < 1e12 ? n * 1000 : n; }
+      var d = Date.parse(t); if (!isNaN(d)) return d;
+    }
+    try { return Number((BigInt(String(p.id)) >> BigInt(22)) + BigInt(1288834974657)); } catch (e) { return 0; }
+  }
+  function hhmm(t) { if (!t) return '--:--'; var d = new Date(t); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2) + ' UTC'; }
+
+  /* ---------- context, mirroring the docs template names ---------- */
+  var CTX = { m: null, ours: null, frontier: null, frontier_zero: null, base: null, cmp: {}, dorian: {},
+              trainEventsStatic: 15, testEventsStatic: TEST_EVENTS.length };
+  CTX.trainEventsStatic = Object.keys(TRAIN_EVENTS).reduce(function (a, k) { return a + TRAIN_EVENTS[k].length; }, 0);
+  var REPLAY = { posts: [], event: null, src: 'truth' };
+
+  /* Normalizes both comparison shapes: one entry per metric (API.md example) and one entry per system pair
+     with delta_macro_f1 / delta_critical_recall and *_delta_ci95 embedded (rr/evaluate.py). */
+  function addCmp(c, flip) {
+    var bs = c.bootstrap || {}, sg = flip ? -1 : 1;
+    var iv = function (x) { return (Array.isArray(x) && num(x[0]) !== null && num(x[1]) !== null) ? (flip ? [-x[1], -x[0]] : [x[0], x[1]]) : null; };
+    var dd = function (x) { return num(x) === null ? null : sg * x; };
+    var mc = c.mcnemar ? (flip ? { a_only: c.mcnemar.b_only, b_only: c.mcnemar.a_only, p: c.mcnemar.p } : c.mcnemar) : null;
+    var wins = num(bs.a_wins), n = num(bs.n);
+    if (flip && wins !== null && n !== null) wins = n - wins;
+    var embedded = ('macro_f1_delta_ci95' in bs) || num(c.delta_macro_f1) !== null;
+    var put = function (k, delta, ci, mcn, w) {
+      if (CTX.cmp[k] && !CTX.cmp[k].derived) return;
+      CTX.cmp[k] = { metric: k, delta: delta, ci: ci, mcnemar: mcn, wins: w, n: n, unit: bs.unit || null };
+    };
+    put(c.metric || 'accuracy', dd(c.delta), iv(bs.delta_ci95), mc, embedded ? null : wins);
+    if (embedded) {
+      put('macro_f1', dd(c.delta_macro_f1), iv(bs.macro_f1_delta_ci95), null, wins);
+      put('critical_recall', dd(c.delta_critical_recall), iv(bs.critical_recall_delta_ci95), null, null);
+    }
+  }
+
+  function buildCtx(m) {
+    if (!m || m.status === 'pending' || !m.systems) { CTX.m = m && m.eval ? m : null; return; }
+    CTX.m = m;
+    var hl = m.headline || {};
+    var oursKey = hl.ours || 'rescue_radar', frontKey = hl.frontier || 'opus_few';
+    CTX.oursKey = oursKey; CTX.frontKey = frontKey;
+    CTX.ours = m.systems[oursKey] || null;
+    CTX.frontier = m.systems[frontKey] || null;
+    CTX.frontier_zero = m.systems.opus_zero || null;
+    CTX.base = m.systems.base_zero || null;
+    CTX.cmp = {};
+    (m.comparisons || []).forEach(function (c) {
+      if (!c) return;
+      if (c.a === oursKey && c.b === frontKey) addCmp(c, false);
+      else if (c.a === frontKey && c.b === oursKey) addCmp(c, true);
+    });
+    // fall back to the raw score gap when a comparison entry has not landed yet
+    [['macro_f1', function (s) { return s.macro_f1; }], ['accuracy', function (s) { return s.accuracy; }],
+     ['critical_recall', function (s) { return s.critical && s.critical.recall; }]].forEach(function (pair) {
+      var k = pair[0];
+      if (!CTX.cmp[k] && CTX.ours && CTX.frontier) {
+        var a = num(pair[1](CTX.ours)), b = num(pair[1](CTX.frontier));
+        if (a !== null && b !== null) CTX.cmp[k] = { metric: k, delta: a - b, derived: true };
+      }
+    });
+  }
+
+  /* ---------- generic bindings ---------- */
+  function applyBindings() {
+    $$('[data-bind]').forEach(function (e) {
+      var v = num(get(CTX, e.dataset.bind));
+      if (v === null && e.dataset.alt) v = num(CTX[e.dataset.alt]);
+      var f = e.dataset.fmt || 'raw';
+      if (v === null) { e.textContent = 'pending'; e.classList.add('pending-txt'); delete e.dataset.v; }
+      else { e.textContent = F[f](v); e.classList.remove('pending-txt'); e.dataset.v = String(v); }
+    });
+  }
+  function countUp(e) {
+    var v = parseFloat(e.dataset.v), f = e.dataset.fmt || 'raw';
+    if (!isFinite(v)) return;
+    if (e._raf) cancelAnimationFrame(e._raf);
+    var t0 = 0, dur = 1300;
+    e.textContent = F[f](0);
+    var step = function (now) {
+      if (!t0) t0 = now;
+      var k = Math.min(1, (now - t0) / dur), ez = 1 - Math.pow(1 - k, 3);
+      e.textContent = F[f](k >= 1 ? v : v * ez);
+      if (k < 1) e._raf = requestAnimationFrame(step);
+    };
+    e._raf = requestAnimationFrame(step);
+  }
+
+  /* ---------- radar blips ---------- */
+  function seeded(seed) { var s = seed >>> 0; return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  function blips(id, n, nCrit, seed) {
+    var host = document.getElementById(id); if (!host) return;
+    var rnd = seeded(seed);
+    for (var i = 0; i < n; i++) {
+      var a = rnd() * 360, rr = 0.12 + rnd() * 0.8, rad = (a - 90) * Math.PI / 180;
+      var b = el('span', 'blip' + (i < nCrit ? ' crit' : ''));
+      b.style.left = (50 + Math.cos(rad) * rr * 50) + '%';
+      b.style.top = (50 + Math.sin(rad) * rr * 50) + '%';
+      b.style.animationDelay = (a / 360 * 4).toFixed(2) + 's';
+      host.appendChild(b);
+    }
+  }
+  blips('radar1', 26, 5, 7); blips('radar10', 22, 4, 11);
+
+  /* ---------- slide 1 hook ---------- */
+  var HOOK = { text: '', label: null, src: 'truth' };
+  var HOOK_ID = '1168306378944987141';  // hand-checked: a real plea for help from Abaco during Dorian
+  function pickHook(posts) {
+    var pinned = posts.filter(function (p) { return p && String(p.id) === HOOK_ID; })[0];
+    if (pinned) return pinned;
+    var kw = /\b(help|rescue|rescued|trapped|stuck|need|needs|please|water|roof|stranded|missing|urgent|sos|boat)\b/gi;
+    var best = null, bs = -1;
+    posts.forEach(function (p) {
+      var lab = p.truth;
+      if (!(lab === 'requests_or_urgent_needs' || lab === 'missing_or_found_people' || p.truth_critical === true)) return;
+      var t = scrub(p.text), L = t.length;
+      if (L < 50 || L > 170) return;
+      var s = (lab === 'requests_or_urgent_needs' ? 3 : 1) + ((t.match(kw) || []).length);
+      if (/\[(link|phone|email)\]/.test(t)) s -= 1;
+      if (/^RT\b/.test(t)) s -= 2;
+      if (/^@/.test(t)) s -= 2;
+      if (s > bs) { best = p; bs = s; }
+    });
+    return best;
+  }
+  function setHook() {
+    var p = REPLAY.posts.length ? pickHook(REPLAY.posts) : null;
+    var lab = $('#hook-lab');
+    lab.textContent = '';
+    if (p) {
+      HOOK.text = '“' + scrub(p.text) + '”';
+      var ours = p.ours && p.ours.label;
+      lab.appendChild(document.createTextNode(ours ? 'Rescue Radar → ' : 'Human label → '));
+      lab.appendChild(chip(ours || p.truth));
+      var when = postTime(p);
+      $('#hook-src').textContent = 'Hurricane Dorian · ' + (when ? new Date(when).toUTCString().slice(5, 16) : '2019') + ' · public post · PII scrubbed';
+    } else {
+      HOOK.text = 'A real public post from Hurricane Dorian (2019) appears here once the replay data is exported.';
+      lab.appendChild(el('span', 'mono', 'replay data pending'));
+    }
+  }
+  var typeTimer = null, typeDelay = null, typeGen = 0;
+  function stopType() { typeGen += 1; clearInterval(typeTimer); clearTimeout(typeDelay); typeTimer = typeDelay = null; }
+  function typeHook() {
+    stopType();
+    var gen = typeGen, p = $('#hook-text'), lab = $('#hook-lab'), txt = HOOK.text || '', i = 0;
+    lab.classList.remove('on'); p.textContent = ''; p.classList.add('caret');
+    typeDelay = setTimeout(function () {
+      if (gen !== typeGen) return;
+      typeTimer = setInterval(function () {
+        if (gen !== typeGen) return;
+        i += 2; p.textContent = txt.slice(0, i);
+        if (i >= txt.length) { clearInterval(typeTimer); p.classList.remove('caret'); lab.classList.add('on'); }
+      }, 22);
+    }, 900);
+  }
+
+  /* ---------- slide 2 firehose ---------- */
+  function buildHose() {
+    var host = $('#hose'); host.textContent = '';
+    var posts = REPLAY.posts;
+    if (!posts.length) { host.appendChild(el('div', 'ph', 'Replay data pending: the Hurricane Dorian post stream renders here.')); host.style.animation = 'none'; return; }
+    var pick = posts.slice(0, 60);
+    var lines = pick.map(function (p) { return el('div', 'ln' + (CRIT[p.truth] ? ' crit' : ''), scrub(p.text)); });
+    lines.concat(lines.map(function (n) { return n.cloneNode(true); })).forEach(function (n) { host.appendChild(n); });
+    var ev = REPLAY.event;
+    if (ev && ev.name) $('#hose-l1').textContent = 'posts in the ' + ev.name + ' test slice';
+  }
+
+  /* ---------- slide 4 console mock ---------- */
+  var CON = { i: 0, timer: null, q: 0, pins: {} };
+  function postLabel(p) { return REPLAY.src === 'ours' ? (p.ours && p.ours.label) : p.truth; }
+  function feedItem(p) {
+    var lab = postLabel(p), d = el('div', 'f-item' + (CRIT[lab] ? ' crit' : ''));
+    var top = el('div', 'f-top'); top.appendChild(el('span', null, hhmm(p._t)));
+    if (p.place && p.place.name) top.appendChild(el('span', 'pl', p.place.name));
+    d.appendChild(top); d.appendChild(el('p', null, trunc(scrub(p.text), 128)));
+    if (lab) d.appendChild(chip(lab));
+    return d;
+  }
+  function addQueue(p) {
+    var q = $('#queue'), lab = postLabel(p);
+    CON.q += 1; $('#q-n').textContent = String(CON.q);
+    var d = el('div', 'q-item'); d.appendChild(el('span', 'rk', String(CON.q)));
+    var body = el('div'); var meta = el('div', 'q-meta'); meta.appendChild(chip(lab)); meta.appendChild(el('span', 'st', 'OPEN'));
+    if (p.place && p.place.name) meta.appendChild(el('span', 'mono muted', p.place.name));
+    body.appendChild(meta); body.appendChild(el('p', null, trunc(scrub(p.text), 96)));
+    d.appendChild(body); q.insertBefore(d, q.firstChild);
+    while (q.children.length > 6) q.removeChild(q.lastChild);
+  }
+  function pingPin(p) {
+    if (!p.place) return;
+    var g = CON.pins[p.place.name + '|' + p.place.lat + '|' + p.place.lng];
+    if (g) { g.classList.remove('ping'); void g.getBoundingClientRect(); g.classList.add('ping'); }
+  }
+  function feedStep() {
+    var posts = REPLAY.posts; if (!posts.length) return;
+    var p = posts[CON.i % posts.length]; CON.i += 1;
+    var feed = $('#feed'); feed.insertBefore(feedItem(p), feed.firstChild);
+    while (feed.children.length > 7) feed.removeChild(feed.lastChild);
+    if (CRIT[postLabel(p)]) { addQueue(p); pingPin(p); }
+  }
+  function consoleEnter() {
+    var feed = $('#feed'), q = $('#queue'); feed.textContent = ''; q.textContent = ''; CON.q = 0; $('#q-n').textContent = '0';
+    var posts = REPLAY.posts;
+    if (!posts.length) { feed.appendChild(el('div', 'map-cap', 'Replay data pending.')); return; }
+    CON.i = 0;
+    var crit = posts.filter(function (p) { return CRIT[postLabel(p)]; }).slice(0, 4).reverse();
+    crit.forEach(addQueue);
+    for (var k = 0; k < 6; k++) feedStep();
+    clearInterval(CON.timer); CON.timer = setInterval(feedStep, 1300);
+  }
+  function consoleLeave() { clearInterval(CON.timer); CON.timer = null; }
+
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function sv(tag, attrs, parent) { var e = document.createElementNS(SVGNS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  function quantile(arr, q) { var a = arr.slice().sort(function (x, y) { return x - y; }); var i = (a.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i); return a[lo] + (a[hi] - a[lo]) * (i - lo); }
+  function buildMap() {
+    var svg = $('#map'); while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var W = 600, H = 590, posts = REPLAY.posts, ev = REPLAY.event;
+    var placed = posts.filter(function (p) { return p.place && isFinite(p.place.lat) && isFinite(p.place.lng); });
+    var cap = $('#map-cap');
+    if (!placed.length && !(ev && ev.center)) {
+      var t = sv('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', 'class': 'grat-l' }, svg); t.textContent = 'Replay data pending: rescue pins render here';
+      cap.textContent = ''; return;
+    }
+    var lat0, lng0, span;
+    if (ev && Array.isArray(ev.center) && isFinite(ev.center[0]) && isFinite(ev.center[1])) {
+      lat0 = +ev.center[0]; lng0 = +ev.center[1];
+      span = isFinite(ev.zoom) ? 360 * W / (256 * Math.pow(2, +ev.zoom)) : null;
+    }
+    if (placed.length) {
+      var lats = placed.map(function (p) { return +p.place.lat; }), lngs = placed.map(function (p) { return +p.place.lng; });
+      if (lat0 === undefined) { lat0 = quantile(lats, 0.5); lng0 = quantile(lngs, 0.5); }
+      if (!span) {
+        var cosA = Math.cos(lat0 * Math.PI / 180);
+        var dx = Math.max(Math.abs(quantile(lngs, 0.1) - lng0), Math.abs(quantile(lngs, 0.9) - lng0));
+        var dy = Math.max(Math.abs(quantile(lats, 0.1) - lat0), Math.abs(quantile(lats, 0.9) - lat0)) / cosA;
+        span = Math.max(2, 2.5 * Math.max(dx, dy * W / H));
+      }
+    }
+    if (!span) span = 8;
+    var kx = W / span, ky = kx / Math.cos(lat0 * Math.PI / 180);
+    var X = function (lng) { return W / 2 + (lng - lng0) * kx; }, Y = function (lat) { return H / 2 - (lat - lat0) * ky; };
+    var step = span < 3 ? 0.5 : span < 8 ? 1 : span < 20 ? 2 : span < 50 ? 5 : 10;
+    var g0 = sv('g', {}, svg);
+    for (var lg = Math.ceil((lng0 - span / 2) / step) * step; lg <= lng0 + span / 2; lg += step) {
+      sv('line', { x1: X(lg), x2: X(lg), y1: 0, y2: H, 'class': 'grat' }, g0);
+      var tl = sv('text', { x: X(lg) + 4, y: 14, 'class': 'grat-l' }, g0); tl.textContent = Math.abs(Math.round(lg * 10) / 10) + '°' + (lg < 0 ? 'W' : 'E');
+    }
+    var latSpan = H / ky;
+    for (var la = Math.ceil((lat0 - latSpan / 2) / step) * step; la <= lat0 + latSpan / 2; la += step) {
+      sv('line', { x1: 0, x2: W, y1: Y(la), y2: Y(la), 'class': 'grat' }, g0);
+      var tt = sv('text', { x: 6, y: Y(la) - 4, 'class': 'grat-l' }, g0); tt.textContent = Math.abs(Math.round(la * 10) / 10) + '°' + (la < 0 ? 'S' : 'N');
+    }
+    [90, 180, 270].forEach(function (r) { sv('circle', { cx: W / 2, cy: H / 2, r: r, 'class': 'ring' }, g0); });
+    var groups = {};
+    placed.forEach(function (p) {
+      var key = p.place.name + '|' + p.place.lat + '|' + p.place.lng;
+      var gr = groups[key] || (groups[key] = { p: p.place, n: 0, crit: 0, lab: null });
+      gr.n += 1; var lab = postLabel(p); if (CRIT[lab]) { gr.crit += 1; if (!gr.lab) gr.lab = lab; }
+    });
+    var list = Object.keys(groups).map(function (k) { return [k, groups[k]]; });
+    var inView = function (gr) { var x = X(gr.p.lng), y = Y(gr.p.lat); return x > 8 && x < W - 8 && y > 20 && y < H - 30; };
+    list.forEach(function (kv) { var gr = kv[1]; if (!gr.crit && inView(gr)) sv('circle', { cx: X(gr.p.lng), cy: Y(gr.p.lat), r: 2.5 + Math.min(4, Math.sqrt(gr.n)), 'class': 'dot' }, svg); });
+    var crits = list.filter(function (kv) { return kv[1].crit && inView(kv[1]); }).sort(function (a, b) { return b[1].crit - a[1].crit; });
+    CON.pins = {};
+    var placedLabels = [];
+    crits.forEach(function (kv, i) {
+      var gr = kv[1], x = X(gr.p.lng), y = Y(gr.p.lat), r = 4 + Math.min(6, Math.sqrt(gr.crit) * 1.6);
+      var g = sv('g', { 'class': 'pin' + critCls(gr.lab).replace(' crit', ''), style: '--d:' + (300 + i * 90) + 'ms;--pd:' + (i * 0.37 % 2.4).toFixed(2) + 's' }, svg);
+      sv('circle', { cx: x, cy: y, r: r, 'class': 'halo' }, g);
+      sv('circle', { cx: x, cy: y, r: r, 'class': 'core' }, g);
+      var flip = x > W - 170, lx = flip ? x - r - 6 : x + r + 6;
+      var clash = placedLabels.some(function (q) { return Math.abs(q[1] - y) < 16 && Math.abs(q[0] - lx) < 150; });
+      if (placedLabels.length < 6 && !clash) {
+        var tx = sv('text', { x: lx, y: y + 4, 'class': 'plab', 'text-anchor': flip ? 'end' : 'start' }, g);
+        tx.textContent = gr.p.name + (gr.crit > 1 ? ' · ' + gr.crit : ''); placedLabels.push([lx, y]);
+      }
+      CON.pins[kv[0]] = g;
+    });
+    var nCrit = crits.reduce(function (a, kv) { return a + kv[1].crit; }, 0);
+    cap.textContent = crits.length ? (nCrit.toLocaleString('en-US') + ' located rescue-critical posts at ' + crits.length + ' places · grey: other located posts') : 'No located rescue-critical posts in view';
+  }
+
+  /* ---------- slide 6 timeline ---------- */
+  function buildTimeline() {
+    var host = $('#tl');
+    $$('.yr,.tick,.evs,.wall,.band', host).forEach(function (n) { n.remove(); });
+    var xs = { 2016: 150, 2017: 470, 2018: 790, 2019: 1215 };
+    var W = 1408;
+    var pct = function (x) { return (x / W * 100) + '%'; };
+    Object.keys(xs).forEach(function (y) {
+      var isTest = y === '2019';
+      var t = el('div', 'tick' + (isTest ? ' test' : '')); t.style.left = pct(xs[y]); host.appendChild(t);
+      var l = el('div', 'yr' + (isTest ? ' test' : ''), y); l.style.left = pct(xs[y]); host.appendChild(l);
+      var evs = el('div', 'evs'); evs.style.left = pct(xs[y]);
+      if (isTest) {
+        TEST_EVENTS.forEach(function (te) {
+          var n = num(get(CTX, 'm.eval.events.' + te[0]));
+          var e = el('div', 'ev test'); e.appendChild(el('span', null, te[1])); e.appendChild(el('b', null, n === null ? 'pending' : F.int(n) + ' posts'));
+          evs.appendChild(e);
+        });
+      } else {
+        TRAIN_EVENTS[y].forEach(function (name) { evs.appendChild(el('div', 'ev', name)); });
+      }
+      host.appendChild(evs);
+    });
+    var wall = el('div', 'wall'); wall.style.left = pct(1035); wall.appendChild(el('span', null, 'NEVER SEEN IN TRAINING')); host.appendChild(wall);
+    var band = el('div', 'band', 'TRAIN · FINE-TUNE ON THESE'); band.style.left = pct(470); host.appendChild(band);
+  }
+
+  /* ---------- slide 7 results ---------- */
+  var METRICS = [
+    { id: 'macro_f1', label: 'Macro-F1', sub: 'all 10 categories weighted equally', v: function (s) { return s.macro_f1; }, ci: function (s) { return s.ci95 && s.ci95.macro_f1; } },
+    { id: 'accuracy', label: 'Accuracy', sub: 'share of posts labelled exactly right', v: function (s) { return s.accuracy; }, ci: function (s) { return s.ci95 && s.ci95.accuracy; } },
+    { id: 'critical_recall', label: 'Rescue-critical recall', sub: 'share of real rescue posts that reach the queue', crit: true, v: function (s) { return s.critical && s.critical.recall; }, ci: function (s) { return s.ci95 && s.ci95.critical_recall; } }
+  ];
+  function sysRows() {
+    var systems = (CTX.m && CTX.m.systems) || {}, fk = CTX.frontKey || 'opus_few';
+    var out = [];
+    SYS.forEach(function (s) {
+      var data = s.key === 'ours' ? CTX.ours : (s.key === CTX.oursKey ? null : systems[s.key] || null);
+      var always = s.key === 'ours' || s.key === fk;
+      if (!data && !always) return;
+      var cls = s.key === 'ours' ? 'ours' : (s.key === fk ? 'opus' : (s.key.indexOf('opus') === 0 ? 'opus0' : 'base'));
+      var short = s.key === 'ours' && CTX.oursKey === 'rescue_radar_quick' ? 'Rescue Radar, quick' : s.short;
+      out.push({ key: s.key, cls: cls, short: short, data: data });
+    });
+    return out;
+  }
+  function buildBars() {
+    var box = $('#bars'); box.textContent = '';
+    var rows = sysRows();
+    METRICS.forEach(function (mt, gi) {
+      var g = el('div', 'bgroup');
+      var h = el('div', 'bg-head'); h.appendChild(el('span', 'bg-title' + (mt.crit ? ' crit' : ''), mt.label)); h.appendChild(el('span', 'bg-sub', mt.sub)); g.appendChild(h);
+      rows.forEach(function (s, ri) {
+        var d = s.data, v = d ? num(mt.v(d)) : null, ci = d ? mt.ci(d) : null;
+        var row = el('div', 'brow ' + s.cls); var nm = el('span', 'bname', s.short); if (d && d.name) nm.title = d.name; row.appendChild(nm);
+        var tr = el('div', 'track'), fill = el('i');
+        fill.style.setProperty('--w', v === null ? '0%' : (Math.max(0, Math.min(1, v)) * 100).toFixed(2) + '%');
+        fill.style.setProperty('--d', (450 + gi * 260 + ri * 90) + 'ms'); tr.appendChild(fill);
+        var hasCi = Array.isArray(ci) && num(ci[0]) !== null && num(ci[1]) !== null;
+        if (hasCi) { var w = el('b', 'whisk'); w.style.left = (ci[0] * 100) + '%'; w.style.width = Math.max(0.3, (ci[1] - ci[0]) * 100) + '%'; w.style.setProperty('--d', (1500 + gi * 260 + ri * 90) + 'ms'); tr.appendChild(w); }
+        row.appendChild(tr);
+        var val = el('span', 'bval', v === null ? 'pending' : F.pct(v));
+        if (v === null) val.classList.add('pending-txt');
+        if (hasCi) val.appendChild(el('small', null, (ci[0] * 100).toFixed(1) + '–' + (ci[1] * 100).toFixed(1)));
+        row.appendChild(val); g.appendChild(row);
+      });
+      box.appendChild(g);
+    });
+    // headline gaps + plain-words significance; wording follows the sign, never assumes a win
+    var fname = (CTX.frontier && CTX.frontier.name) || 'Claude Opus 5.5';
+    var c = CTX.cmp.macro_f1, c2 = CTX.cmp.critical_recall;
+    var dev = $('#res-dev');
+    if (dev) dev.textContent = CTX.oursKey === 'rescue_radar_quick' ? ' Headline = the small-data run, pre-registered as an ablation; the pre-registered main system is not scored yet.' : '';
+    if (c && num(c.delta) !== null) {
+      // "beats" only when the macro-F1 interval excludes zero; a lead inside the noise is a match, not a win
+      var f1Up = !!(c.ci && c.ci[0] > 0), f1Down = !!(c.ci && c.ci[1] < 0);
+      var recUp = !!(c2 && c2.ci && c2.ci[0] > 0);
+      $('#res-big').classList.toggle('neg', c.delta < 0);
+      $('#res-cap').textContent = 'macro-F1 ' + (c.delta >= 0 ? 'lead over ' : 'gap behind ') + fname + ' on 4 disasters it never saw' +
+        (c.ci && !f1Up && !f1Down ? ' (within noise)' : '');
+      $('#res-title').textContent = f1Up ? 'A fine-tuned open model beats the frontier'
+        : (!f1Down && recUp) ? 'Matches the frontier, finds more rescue requests'
+        : (!f1Down && c.ci) ? 'A fine-tuned open model matches the frontier'
+        : 'Fine-tuned open model vs the frontier';
+    }
+    if (c2 && num(c2.delta) !== null) {
+      $('#res-big2').classList.toggle('neg', c2.delta < 0);
+      $('#res-cap2').textContent = 'rescue-critical recall ' + (c2.delta >= 0 ? 'lead' : 'gap') + ': missing a rescue request is the costly error';
+    }
+    var mc = (CTX.cmp.accuracy && CTX.cmp.accuracy.mcnemar) || null;
+    var sm = $('#sig-mc'), sb = $('#sig-bs');
+    if (mc && num(mc.a_only) !== null && num(mc.b_only) !== null) {
+      var tot = mc.a_only + mc.b_only, pv = num(mc.p);
+      sm.textContent = 'On the ' + F.int(tot) + ' posts where exactly one system got the label right, Rescue Radar was the one right ' + F.int(mc.a_only) +
+        ' times and Opus ' + F.int(mc.b_only) + ' times (' + (pv === null ? 'p pending' : F.p(pv)) + '). ' +
+        (pv === null ? '' : pv < 0.05 ? 'A split that lopsided is very unlikely if the two were equally good.' : 'That split is consistent with chance, so we do not claim a difference.');
+    } else sm.textContent = 'pending: the head-to-head test fills in from results.json.';
+    var parts = [], unit = null, nRes = null;
+    [['macro_f1', 'Macro-F1'], ['critical_recall', 'Rescue-critical recall']].forEach(function (pair) {
+      var cc = CTX.cmp[pair[0]]; if (!cc || !cc.ci) return;
+      var lo = cc.ci[0], hi = cc.ci[1];
+      var s = pair[1] + ': ' + (num(cc.delta) === null ? 'n/a' : F.pts(cc.delta)) + ' (CI ' + F.pts(lo) + ' to ' + F.pts(hi) + ')';
+      if (num(cc.wins) !== null && num(cc.n) !== null) s += ', ahead in ' + F.int(cc.wins) + ' of ' + F.int(cc.n) + ' resamples';
+      s += (lo > 0 || hi < 0) ? '; excludes zero.' : '; includes zero, so no claim.';
+      parts.push(s);
+      if (cc.unit) unit = cc.unit; if (num(cc.n) !== null) nRes = cc.n;
+    });
+    sb.textContent = parts.length ? ('Test set re-drawn ' + (nRes ? F.int(nRes) + ' times' : 'many times') + (unit ? ', ' + unit : '') + '. ' + parts.join(' ')) : 'pending: bootstrap intervals fill in from results.json.';
+  }
+
+  /* ---------- slide 8 speed and cost ---------- */
+  function tagOf(note) {
+    if (!note) return null; var s = String(note).toLowerCase();
+    if (s.indexOf('measured') === 0) return 'm'; if (s.indexOf('estimated') === 0) return 'e';
+    return s.indexOf('estimat') >= 0 ? 'e' : (s.indexOf('measur') >= 0 ? 'm' : null);
+  }
+  function tagEl(kind) { return el('span', 'tag ' + (kind || 'p'), kind === 'm' ? 'MEASURED' : kind === 'e' ? 'ESTIMATED' : 'PENDING'); }
+  function ratioBlock(panel, a, b, unitWord) {
+    var r = el('div', 'ratio'), c = el('div', 'ratio-cap');
+    if (a !== null && b !== null && a > 0 && b > 0) {
+      if (a <= b) { r.textContent = F.x(b / a); c.textContent = unitWord[0]; }
+      else { r.textContent = F.x(a / b); r.classList.add('neg'); c.textContent = unitWord[1]; }
+    } else { r.textContent = 'pending'; r.classList.add('neg'); c.textContent = 'fills in from results.json'; }
+    panel.appendChild(r); panel.appendChild(c);
+  }
+  function rowsBlock(panel, items, f) {
+    var max = items.reduce(function (a, it) { return Math.max(a, it.v || 0); }, 0) || 1;
+    var box = el('div', 'lrows');
+    items.forEach(function (it, i) {
+      var row = el('div', 'lrow brow ' + it.cls); row.appendChild(el('span', 'bname', it.label));
+      var tr = el('div', 'track'), fill = el('i');
+      fill.style.setProperty('--w', it.v === null ? '0%' : (it.v / max * 100).toFixed(2) + '%'); fill.style.setProperty('--d', (600 + i * 120) + 'ms');
+      tr.appendChild(fill); row.appendChild(tr);
+      var v = el('span', 'bval', it.v === null ? 'pending' : F[f](it.v)); if (it.v === null) v.classList.add('pending-txt'); row.appendChild(v);
+      box.appendChild(row);
+    });
+    panel.appendChild(box);
+  }
+  function buildSpeed() {
+    var o = CTX.ours || {}, f = CTX.frontier || {};
+    var lat = $('#p-lat'); lat.textContent = '';
+    var h = el('h3', null, 'Latency per post'); h.appendChild(tagEl(o.latency_ms || f.latency_ms ? 'm' : null)); lat.appendChild(h);
+    var o50 = num(get(o, 'latency_ms.p50')), f50 = num(get(f, 'latency_ms.p50'));
+    ratioBlock(lat, o50, f50, ['lower median latency than Claude Opus 5.5', 'higher median latency than Claude Opus 5.5']);
+    rowsBlock(lat, [
+      { label: 'Rescue Radar p50', cls: 'ours', v: o50 }, { label: 'Opus 5.5 p50', cls: 'opus', v: f50 },
+      { label: 'Rescue Radar p95', cls: 'ours', v: num(get(o, 'latency_ms.p95')) }, { label: 'Opus 5.5 p95', cls: 'opus', v: num(get(f, 'latency_ms.p95')) }
+    ], 'ms');
+    lat.appendChild(el('div', 'note', 'Wall-clock time per post, measured on every call in the benchmark run. Rescue Radar: Fireworks serverless sampling, 32 parallel requests on shared capacity. Opus: Anthropic API, 24 parallel requests; same instructions, plus 20 examples.'));
+    var t8 = $('#t8');
+    if (t8 && o50 !== null && f50 !== null) t8.innerHTML = o50 > f50 ? 'Cheap enough for every post,<br>slower per post for now' : 'Fast enough for a live feed,<br>cheap enough for every post';
+
+    var cost = $('#p-cost'); cost.textContent = '';
+    var oc = num(o.cost_per_1m_usd), fc = num(f.cost_per_1m_usd);
+    var costTag = function (x) { return typeof x.cost_measured === 'boolean' ? (x.cost_measured ? 'm' : 'e') : tagOf(x.cost_note); };
+    var ok = oc === null ? null : costTag(o), fk = fc === null ? null : costTag(f);
+    var h2 = el('h3', null, 'Cost per 1M posts'); var tags = el('span'); tags.style.display = 'flex'; tags.style.gap = '8px';
+    tags.appendChild(tagEl(ok)); if (fk && fk !== ok) tags.appendChild(tagEl(fk)); h2.appendChild(tags); cost.appendChild(h2);
+    ratioBlock(cost, oc, fc, ['cheaper per million posts than Claude Opus 5.5', 'more expensive per million posts than Claude Opus 5.5']);
+    rowsBlock(cost, [{ label: 'Rescue Radar', cls: 'ours', v: oc }, { label: CTX.frontKey === 'opus_zero' ? 'Opus 5.5, zero-shot' : 'Opus 5.5, 20-shot', cls: 'opus', v: fc }], 'usd');
+    var notes = [];
+    if (o.cost_note) notes.push('Rescue Radar: ' + o.cost_note + (num(o.cost_per_1m_usd_undiscounted) !== null ? ' (undiscounted: ' + F.usd(o.cost_per_1m_usd_undiscounted) + ' per 1M posts)' : ''));
+    if (f.cost_note) notes.push('Opus: ' + f.cost_note);
+    cost.appendChild(el('div', 'note', notes.length ? notes.join('  ·  ') : 'Cost basis pending: each figure is labelled measured or estimated when results land.'));
+  }
+
+  /* ---------- slide 9 limitations ---------- */
+  function buildLimits() {
+    var rec = num(get(CTX, 'ours.critical.recall'));
+    var miss = $('#lim-miss');
+    if (rec !== null) { miss.textContent = ''; miss.appendChild(el('b', null, 'It misses some. ')); miss.appendChild(document.createTextNode('About ' + F.pct(1 - rec) + ' of rescue-critical posts on unseen disasters are not flagged, so it runs beside 911, never instead of it.')); }
+    var pc = get(CTX, 'ours.per_class'), weak = null;
+    if (pc && typeof pc === 'object') Object.keys(pc).forEach(function (k) { var f1 = num(pc[k] && pc[k].f1); if (f1 !== null && (pc[k].support === undefined || pc[k].support > 0) && (!weak || f1 < weak[1])) weak = [k, f1]; });
+    if (weak) { var w = $('#lim-weak'); w.textContent = ''; w.appendChild(el('b', null, 'Weakest category: ')); w.appendChild(document.createTextNode(labelName(weak[0]) + ' (F1 ' + F.pct(weak[1]) + ').')); }
+  }
+
+  /* ---------- navigation ---------- */
+  var hooks = {
+    0: { enter: typeHook, leave: stopType },
+    3: { enter: consoleEnter, leave: consoleLeave }
+  };
+  function enter(n) {
+    var s = slides[n];
+    $$('[data-count]', s).forEach(function (e) { if (e.dataset.v) setTimeout(function () { if (cur === n) countUp(e); }, 420); });
+    if (hooks[n] && hooks[n].enter) hooks[n].enter();
+  }
+  function go(n, fromHash) {
+    n = Math.max(0, Math.min(N - 1, n));
+    if (n === cur) return;
+    if (cur >= 0) { slides[cur].classList.remove('active'); if (hooks[cur] && hooks[cur].leave) hooks[cur].leave(); }
+    cur = n; slides[n].classList.add('active'); enter(n);
+    $('#counter').innerHTML = '<b>' + ('0' + (n + 1)).slice(-2) + '</b> / ' + ('0' + N).slice(-2);
+    $('#progress').style.width = ((n + 1) / N * 100) + '%';
+    if (!fromHash) { try { history.replaceState(null, '', '#' + (n + 1)); } catch (e) { /* file:// or sandboxed */ } }
+  }
+  function fit() { var s = Math.min(window.innerWidth / 1600, window.innerHeight / 900); stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')'; }
+  function toggleFs() {
+    var d = document, de = d.documentElement;
+    try {
+      if (!(d.fullscreenElement || d.webkitFullscreenElement)) { (de.requestFullscreen || de.webkitRequestFullscreen).call(de); }
+      else { (d.exitFullscreen || d.webkitExitFullscreen).call(d); }
+    } catch (e) { /* fullscreen not available */ }
+  }
+  window.addEventListener('resize', fit); fit();
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' ' || k === 'Enter') { e.preventDefault(); go(cur + 1); }
+    else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace') { e.preventDefault(); go(cur - 1); }
+    else if (k === 'Home') go(0);
+    else if (k === 'End') go(N - 1);
+    else if (k === 'f' || k === 'F') toggleFs();
+  });
+  stage.addEventListener('click', function (e) {
+    if (e.target.closest('a,button,#hud')) return;
+    var r = stage.getBoundingClientRect();
+    if (e.clientX - r.left < r.width * 0.3) go(cur - 1); else go(cur + 1);
+  });
+  $('#b-prev').addEventListener('click', function () { go(cur - 1); });
+  $('#b-next').addEventListener('click', function () { go(cur + 1); });
+  $('#b-fs').addEventListener('click', toggleFs);
+  var tx = null, ty = null;
+  window.addEventListener('touchstart', function (e) { var t = e.changedTouches[0]; tx = t.clientX; ty = t.clientY; }, { passive: true });
+  window.addEventListener('touchend', function (e) {
+    if (tx === null) return; var t = e.changedTouches[0], dx = t.clientX - tx, dy = t.clientY - ty; tx = null;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { if (dx < 0) go(cur + 1); else go(cur - 1); }
+  }, { passive: true });
+  window.addEventListener('hashchange', function () { var n = parseInt(location.hash.slice(1), 10); if (n >= 1 && n <= N) go(n - 1, true); });
+
+  /* ---------- data ---------- */
+  function getJSON(url) {
+    if (location.protocol === 'file:') return Promise.resolve(null);
+    return fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+  }
+  function firstJSON(urls) {
+    return urls.reduce(function (p, u) { return p.then(function (v) { return v || getJSON(u); }); }, Promise.resolve(null));
+  }
+  function render() {
+    try { buildHose(); } catch (e) { console.warn('hose', e); }
+    try { setHook(); } catch (e) { console.warn('hook', e); }
+    try { buildMap(); } catch (e) { console.warn('map', e); }
+    try { buildTimeline(); } catch (e) { console.warn('timeline', e); }
+    try { buildBars(); } catch (e) { console.warn('bars', e); }
+    try { buildSpeed(); } catch (e) { console.warn('speed', e); }
+    try { buildLimits(); } catch (e) { console.warn('limits', e); }
+    applyBindings();
+    document.body.classList.toggle('pending', !CTX.ours);
+  }
+  render();
+  var start = parseInt(location.hash.slice(1), 10);
+  go(start >= 1 && start <= N ? start - 1 : 0, true);
+
+  Promise.all([
+    firstJSON(['../data/results.json', '../../results/metrics.json']),
+    getJSON('../data/replay/hurricane_dorian_2019.json'),
+    getJSON('../data/meta.json')
+  ]).then(function (res) {
+    var m = res[0], rp = res[1], meta = res[2];
+    buildCtx(m);
+    // training-set size from the training log header (rr.server meta.training), else metrics.json
+    CTX.training = { examples: (meta && meta.training && num(meta.training.examples)) || num(m && m.eval && m.eval.train_examples) };
+    var posts = rp ? (Array.isArray(rp) ? rp : (rp.posts || [])) : [];
+    posts = posts.filter(function (p) { return p && typeof p.text === 'string' && p.text; });
+    posts.forEach(function (p) { p._t = postTime(p); });
+    posts.sort(function (a, b) { return a._t - b._t; });
+    REPLAY.posts = posts; REPLAY.event = rp && !Array.isArray(rp) ? (rp.event || null) : null;
+    REPLAY.src = posts.some(function (p) { return p.ours && p.ours.label; }) ? 'ours' : 'truth';
+    var ev = REPLAY.event, nPosts = num(ev && ev.n_posts);
+    if (nPosts === null && posts.length) nPosts = posts.length;
+    var share = null;
+    if (posts.length) share = posts.filter(function (p) { return p.truth_critical === true || CRIT[p.truth]; }).length / posts.length;
+    else if (ev && num(ev.n_critical) !== null && num(ev.n_posts)) { share = ev.n_critical / ev.n_posts; $('#hose-l2').textContent = 'are rescue-critical'; }
+    CTX.dorian = { n_posts: nPosts, crit_share: share };
+    if (ev && ev.name) $('#c-ev').textContent = ev.name + (ev.year ? ' ' + ev.year : '');
+    $('#c-src').textContent = posts.length ? (REPLAY.src === 'ours' ? 'labels: Rescue Radar predictions' : 'labels: human annotations (model predictions pending)') : 'labels: pending';
+    render();
+    var n = cur; if (hooks[n] && hooks[n].leave) hooks[n].leave(); enter(n);
+  });
+})();
+</script>
+</body>
+</html>

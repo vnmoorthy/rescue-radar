@@ -1,0 +1,31 @@
+.env
+__pycache__/
+.venv/
+data/raw/
+state/
+
+# Python
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Secrets: never commit keys (see SECURITY.md)
+.env.*
+!.env.example
+
+# Local runtime state and dev-only fixtures
+web/data/
+
+# OS and editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Regenerable with `python -m rr.prep` (large); run logs; local tool config
+data/train_sft.jsonl
+data/test_full.jsonl
+data/*.out
+.claude/

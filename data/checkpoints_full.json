@@ -1,0 +1,62 @@
+{
+ "base_model": "accounts/fireworks/models/nvidia-nemotron-3p5-super-vl-120b-a12b-bf16",
+ "session": "ts-19e3a2b722a94b0fba11ba569f8457f9",
+ "run": "run-083d5963fffe401c8842c4f42d447a7a",
+ "checkpoints": [
+  {
+   "step": 25,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0025-c3c718a8",
+   "at": "13:43:22"
+  },
+  {
+   "step": 50,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0050-c3c718a8",
+   "at": "13:46:18"
+  },
+  {
+   "step": 75,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0075-c3c718a8",
+   "at": "13:54:28"
+  },
+  {
+   "step": 100,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0100-c3c718a8",
+   "at": "14:04:45"
+  },
+  {
+   "step": 125,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0125-c3c718a8",
+   "at": "14:14:48"
+  },
+  {
+   "step": 150,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0150-c3c718a8",
+   "at": "14:18:46"
+  },
+  {
+   "step": 175,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0175-c3c718a8",
+   "at": "14:22:00"
+  },
+  {
+   "step": 200,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0200-c3c718a8",
+   "at": "14:24:31"
+  },
+  {
+   "step": 225,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0225-c3c718a8",
+   "at": "14:27:01"
+  },
+  {
+   "step": 250,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0250-c3c718a8",
+   "at": "14:34:30"
+  },
+  {
+   "step": 275,
+   "path": "vnmoorthy/run-083d5963fffe401c8842c4f42d447a7a/rrull-s0275-c3c718a8",
+   "at": "14:50:36"
+  }
+ ]
+}

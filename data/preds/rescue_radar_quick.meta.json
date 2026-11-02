@@ -1,0 +1,11 @@
+{
+ "model": "accounts/fireworks/models/nvidia-nemotron-3p5-super-vl-120b-a12b-bf16",
+ "checkpoint": {
+  "step": 123,
+  "path": "vnmoorthy/run-c153d81b2a414515ab6159258492b429/rr-s0123-5dc7a86e",
+  "at": "14:06:58"
+ },
+ "name": "Rescue Radar: Nemotron 3.5 Super + LoRA (step 123)",
+ "wall_secs": 458.8,
+ "n": 3001
+}
