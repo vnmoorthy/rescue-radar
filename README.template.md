@@ -263,6 +263,15 @@ flowchart LR
 
 More detail: [guide/ARCHITECTURE.md](guide/ARCHITECTURE.md) and the HTTP contract in [guide/API.md](guide/API.md).
 
+### The live layer: a real city in the console
+
+The **Live city** view adds an online lane that runs on today's data instead of a 2019 replay. It has two halves, split by where the network call is allowed to happen:
+
+- **911 dispatch, in the browser.** The console polls San Francisco's open-data CAD feeds directly (DataSF's Socrata API is CORS-enabled): Police & Sheriff real-time calls (the city refreshes them about every 10 minutes; the console polls every 2) and the Fire & EMS feed (refreshed daily by the city, and the status line says so when it trails). No backend and no key, so this half works on the static GitHub Pages demo. Calls land on the same map and feed as the replays, emergency-priority calls are styled as such, and the **Priority** panel lists open emergency calls first. Call types the city publishes without coordinates are shown as location "withheld". Adding a city is one adapter function in `web/views/live.js`.
+- **Social posts and local news, through the server.** Social platforms and news sites do not allow cross-origin reads from a browser, so this half runs when the local server is up: `rr/ingest.py` (started by `python -m rr.server`, every 2 minutes by default) polls SF local-news RSS keyless and Reddit (r/sanfrancisco, r/bayarea) through the free OAuth script-app API, scrubs each new item with `rr/scrub.py`, classifies it with the same fine-tuned model behind the rest of the console (`rr.infer.SamplerClassifier`), and pushes rescue-critical items into the dispatcher's priority queue automatically. The **Social & news** panel (`GET /api/live/social`) shows every item the moment it arrives and fills the label in as classification completes; if the model cannot run, the item stays visible with the reason instead of a blank panel. Ingest state survives restarts in `state/ingest_state.json`; `RR_INGEST=0` turns the worker off.
+
+This is the production shape in miniature: public feeds in on one side, the model ranks, a person decides — on live data.
+
 ## Evaluation design: held-out disasters
 
 A model that has seen a disaster's tweets during training can look much better than it will be on the next disaster. So the split is by **event**, not by tweet:
@@ -279,6 +288,17 @@ A model that has seen a disaster's tweets during training can look much better t
 - **Measured, not estimated.** Latency is measured per call; cost is measured token counts times published prices.{% if m.eval.preregistration %} The choice of the headline system and metrics was fixed before any fine-tuned model was scored on the test set ([`{{ m.eval.preregistration }}`]({{ m.eval.preregistration }})).{% endif %}{% if headline_ablation %} **Deviation:** the pre-registered main system (the larger run's checkpoint frozen at 14:55) has not been scored yet, so the headline numbers on this page come from the small-data run that the pre-registration lists as an ablation.{% endif %}
 
 The full method is in [guide/EVALUATION.md](guide/EVALUATION.md).
+
+### A second opinion: the TypeSafe (Jev) judge
+
+Everything above is scored against HumAID's human labels. As an independent cross-check, the whole 3,001-post eval set also goes through [TypeSafe](https://api.typesafe.ai) (Jev), a judgment-only model: it answers a named question about a text with a calibrated probability, no free text. It shares no training data, prompt or provider with our model or with the frontier baselines. We ask it one fixed question per post — does the author, or someone the post describes, need emergency assistance right now? — and read the probability at a 0.5 threshold as a binary rescue-critical classifier.
+
+What it shows (the `rescue_binary` section of `results/metrics.json`, rendered on the eval slide of the deck):
+
+- The judge is recall-heavy and precision-poor: 80.3% recall, but 720 false alarms across the 3,001 posts (22.1% precision), at 68 ms median latency. Flagging generously is cheap; precision is what the fine-tune buys (60.2% precision at 84.7% recall, 39 missed rescue-critical posts vs the base model's 88).
+- Fine-tuning moved our model toward the judge, not away from it: agreement went from 75.8% (base) to 76.3% (fine-tuned), even though the judge played no part in training.
+
+Setup: put `TYPESAFE_API_KEY=...` in `.env`, run `python -m rr.jev` to score the eval set into `data/preds/jev.jsonl` (resumable like every prediction script), then `python -m rr.evaluate` folds the judge into `results/metrics.json`.
 
 ## Try it locally in 60 seconds
 
@@ -315,6 +335,7 @@ FIREWORKS_API_KEY=...
 ANTHROPIC_API_KEY=...
 OPENAI_API_KEY=...      # optional: GPT-6.1 Terra baseline and Head-to-Head fallback
 HF_TOKEN=...
+TYPESAFE_API_KEY=...    # optional: the independent TypeSafe (Jev) judge, python -m rr.jev
 ```
 
 Then build the data, train, evaluate and open the console:
@@ -341,6 +362,7 @@ python -m rr.baseline opus_zero                     # Claude Opus 5.5, zero-shot
 python -m rr.baseline opus_few                      # Claude Opus 5.5, 20-shot
 python -m rr.baseline gpt_zero                      # GPT-6.1 Terra, zero-shot (added after pre-registration)
 python -m rr.baseline gpt_few                       # GPT-6.1 Terra, 20-shot (added after pre-registration)
+python -m rr.jev                                    # optional: TypeSafe (Jev) judge second opinion -> data/preds/jev.jsonl
 python -m rr.evaluate                               # results/metrics.json
 python scripts/render_docs.py                       # re-render README.md and the guides with the new numbers
 ```
@@ -360,8 +382,10 @@ rescue-radar/
 │   ├── baseline.py          scores Claude Opus 5.5 and GPT-6.1 Terra (zero-shot, 20-shot)
 │   ├── frontier.py          live Claude call for the Head-to-Head view
 │   ├── evaluate.py          metrics, McNemar, stratified bootstrap -> results/metrics.json
+│   ├── jev.py               TypeSafe (Jev) judge: an independent second opinion on the eval set
 │   ├── promote.py           promote a checkpoint to a permanent Fireworks model
 │   ├── server.py            FastAPI app: /api/* and the console
+│   ├── ingest.py            live social/news ingest: Reddit + news RSS -> scrub -> classify -> queue
 │   ├── scrub.py             PII redaction before a human reads a post
 │   ├── geo.py               gazetteer: place names -> coordinates
 │   └── store.py             dispatcher queue (SQLite in state/)
