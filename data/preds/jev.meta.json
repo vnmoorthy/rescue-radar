@@ -1,0 +1,9 @@
+{
+ "model": "jev-1.14.0",
+ "name": "TypeSafe (Jev) judge, jev-1.14.0",
+ "question": "Does the author of this post, or someone the post describes, need emergency assistance right now: rescue, urgent help or supplies, medical attention, or a person who is injured, dead, trapped or missing?",
+ "state_template": "A public social media post written during a natural disaster:\n{text}",
+ "threshold": 0.5,
+ "wall_secs": 14.4,
+ "n": 2713
+}

@@ -82,6 +82,52 @@ def scores(y, p):
             "per_class": pc}
 
 
+def binary_counts(yt, pt):
+    """The two eval functions that matter for a dispatch queue, as explicit counts: false negatives
+    (a real plea for help the system never flags) and false positives (a false alarm a person must clear)."""
+    tp = int((yt & pt).sum()); fp = int((~yt & pt).sum()); fn = int((yt & ~pt).sum()); tn = int((~yt & ~pt).sum())
+    prec = tp / (tp + fp) if tp + fp else 0.0
+    rec = tp / (tp + fn) if tp + fn else 0.0
+    return {"tp": tp, "fp": fp, "fn": fn, "tn": tn,
+            "precision": round(prec, 4), "recall": round(rec, 4),
+            "f1": round(2 * prec * rec / (prec + rec) if prec + rec else 0.0, 4),
+            "fnr": round(fn / (tp + fn) if tp + fn else 0.0, 4),
+            "fpr": round(fp / (fp + tn) if fp + tn else 0.0, 4),
+            "accuracy": round((tp + tn) / max(tp + fp + fn + tn, 1), 4)}
+
+
+def rescue_binary(ev, ids, y, preds, masks):
+    """Collapse every system to the binary decision the priority queue makes (rescue-critical or not) and
+    score it two ways: against the human labels, and against the TypeSafe (Jev) judge's independent
+    classification of whether someone needs emergency assistance (data/preds/jev.jsonl, python -m rr.jev)."""
+    out = {"systems": {}}
+    yt = CRIT[y]
+    jev_rows, jev_mask = load_preds("jev", ids)
+    jev_bin = None
+    if jev_rows is not None:
+        jev_bin = np.array([bool(r) and r["pred"] == "critical" for r in jev_rows])
+        meta_p = ROOT / "data" / "preds" / "jev.meta.json"
+        meta = json.loads(meta_p.read_text()) if meta_p.exists() else {}
+        answered = [r for r in jev_rows if r]
+        lat = np.array([r["latency"] for r in answered]) * 1000
+        out["judge"] = {"name": meta.get("name") or "TypeSafe (Jev) judge", "model": meta.get("model"),
+                        "question": meta.get("question"), "threshold": meta.get("threshold", 0.5),
+                        "n": int(jev_mask.sum()),
+                        "vs_human": binary_counts(yt[jev_mask], jev_bin[jev_mask]),
+                        "latency_ms": {"p50": round(float(np.percentile(lat, 50)), 1),
+                                       "p95": round(float(np.percentile(lat, 95)), 1)}}
+    for key, p in preds.items():
+        mask = masks[key]
+        pt = np.where(p >= 0, CRIT[np.clip(p, 0, None)], False)
+        entry = {"vs_human": binary_counts(yt[mask], pt[mask])}
+        if jev_bin is not None:
+            both = mask & jev_mask
+            entry["vs_jev"] = {**binary_counts(jev_bin[both], pt[both]), "n": int(both.sum()),
+                               "agreement": round(float((pt[both] == jev_bin[both]).mean()), 4)}
+        out["systems"][key] = entry
+    return out
+
+
 def boot_metrics(y, p, idx):
     """Vectorized accuracy, macro-F1 and critical recall for every bootstrap resample (rows of idx)."""
     Y, P = y[idx], p[idx]
@@ -225,6 +271,7 @@ def main():
                  "bootstrap_resamples": B, "preregistration": "guide/PREREGISTRATION.md",
                  "critical_support": int(CRIT[y].sum())},
         "systems": systems, "comparisons": comparisons,
+        "rescue_binary": rescue_binary(ev, ids, y, preds, masks),
         "headline": {"ours": ours, "frontier": frontier, "base": "base_zero" if "base_zero" in systems else None},
     }
     (ROOT / "results").mkdir(exist_ok=True)

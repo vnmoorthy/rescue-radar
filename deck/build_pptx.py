@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build deck/RescueRadar.pptx: the 10-slide Rescue Radar pitch deck (native 16:9, python-pptx).
+"""Build deck/RescueRadar.pptx: the 11-slide Rescue Radar pitch deck (native 16:9, python-pptx).
 
 Every number is read at build time: benchmark results from results/metrics.json, the hook post and the
 Hurricane Dorian slice from the static replay export (docs/data/replay/, else web/data/replay/, else
@@ -305,10 +305,14 @@ class Deck:
         self.prs.slide_width, self.prs.slide_height = Inches(13.333), Inches(7.5)
         self.layout = self.prs.slide_layouts[6]  # blank
 
-    def slide(self, footer=True):
+    def slide(self, bg=None, footer=True):
         s = self.prs.slides.add_slide(self.layout)
         s.background.fill.solid()
         s.background.fill.fore_color.rgb = rgb(BG)
+        # Faint full-bleed background art (deck/bg/, pre-faded over BG so text stays readable); first shape = bottom.
+        p = ROOT / "deck" / "bg" / f"{bg}.jpg" if bg else None
+        if p and p.exists():
+            s.shapes.add_picture(str(p), 0, 0, self.prs.slide_width, self.prs.slide_height)
         s._anim = []
         streak(s, 0.75, 7.04, 11.83, name="Footer streak")
         if footer:
@@ -565,7 +569,7 @@ def build(D, out):
     fname = D.front_name
 
     # 1 ---------------------------------------------------------------- title + hook
-    s = deck.slide(footer=False)
+    s = deck.slide("01-title", footer=False)
     radar(s, 10.55, 3.75, 2.75, 7)
     eyebrow(s, 0.75, 0.75, "Fireworks: Deploy  ·  San Francisco", w=7.0)
     text(s, 0.75, 1.1, 7.2, 2.4, [[("Rescue", {})], [("Radar", {"color": ACCENT})]], size=80, font=DISPLAY,
@@ -595,7 +599,7 @@ def build(D, out):
     add_transition_and_timing(s, "fade")
 
     # 2 ---------------------------------------------------------------- problem
-    s = deck.slide()
+    s = deck.slide("02-problem")
     header(s, 2, "The problem", "When the phones jam,\nthe pleas go public", accent="public")
     beats = [("01", "Emergency lines saturate", "In a major disaster, call volume outruns 911 and emergency lines. Many callers never get through."),
              ("02", "Pleas move to social media", "People post wherever someone might see it: the street, the water level, who is trapped."),
@@ -625,7 +629,7 @@ def build(D, out):
     add_transition_and_timing(s, "push")
 
     # 3 ---------------------------------------------------------------- who
-    s = deck.slide()
+    s = deck.slide("03-who")
     header(s, 3, "Who it is for", "Built for the people\nwho send the boats")
     who = [("Dispatchers", "911 centers and public-safety answering points that need overflow triage when the lines jam."),
            ("Emergency operations centers", "City, county and state EOCs building one picture of who needs help, and where."),
@@ -648,7 +652,7 @@ def build(D, out):
     add_transition_and_timing(s, "fade")
 
     # 4 ---------------------------------------------------------------- product
-    s = deck.slide()
+    s = deck.slide("04-product")
     header(s, 4, "The product", "A dispatch console that reads every post", size=32)
     card(s, 0.75, 1.65, 11.85, 5.15, fill=BG_ELEV, line=LINE2, adj=0.02, anim=True)
     rect(s, 0.76, 1.66, 11.83, 0.42, fill=PANEL)
@@ -721,7 +725,7 @@ def build(D, out):
     add_transition_and_timing(s, "push")
 
     # 5 ---------------------------------------------------------------- how
-    s = deck.slide()
+    s = deck.slide("05-how")
     header(s, 5, "How it works", "One open model,\nfine-tuned for one job")
     nodes = [("Posts", "2019 replay, or paste / upload"), ("PII redaction", "Best effort, before a human reads it"),
              ("Classify", "Nemotron 3.5 Super + LoRA on Fireworks"), ("Locate", "Place names to map pins"),
@@ -757,7 +761,7 @@ def build(D, out):
     add_transition_and_timing(s, "fade")
 
     # 6 ---------------------------------------------------------------- benchmark design
-    s = deck.slide()
+    s = deck.slide("06-benchmark")
     header(s, 6, "The benchmark", "Tested on disasters\nit has never seen")
     years = {"2016": ["Kaikoura earthquake", "Ecuador earthquake", "Canada wildfires", "Italy earthquake", "Hurricane Matthew"],
              "2017": ["Hurricane Harvey", "Hurricane Irma", "Hurricane Maria", "Puebla earthquake", "Sri Lanka floods"],
@@ -802,7 +806,7 @@ def build(D, out):
     add_transition_and_timing(s, "push")
 
     # 7 ---------------------------------------------------------------- results
-    s = deck.slide()
+    s = deck.slide("07-results")
     d_f1, d_rec = D.delta("macro_f1"), D.delta("critical_recall")
     # "beats" only when the macro-F1 interval excludes zero; a lead inside the noise is a match, not a win
     ci_f1, ci_rec = g(D.cmp, "macro_f1", "ci"), g(D.cmp, "critical_recall", "ci")
@@ -886,10 +890,72 @@ def build(D, out):
              "Transition: fade.")
     add_transition_and_timing(s, "fade")
 
-    # 8 ---------------------------------------------------------------- speed and cost
-    s = deck.slide()
+    # 8 ---------------------------------------------------------------- eval functions: FN and FP
+    s = deck.slide("07-results")
+    header(s, 8, "The eval functions", "Two ways to be wrong,\ncounted post by post", accent="wrong", size=32)
+    rb = D.m.get("rescue_binary") or {}
+    rbs = rb.get("systems") or {}
+    before, after, judge = rbs.get("base_zero") or {}, rbs.get(D.ours_key) or {}, rb.get("judge") or {}
+    b_h, a_h, j_h = before.get("vs_human") or {}, after.get("vs_human") or {}, judge.get("vs_human") or {}
+    supp = next((int(f(h["tp"]) + f(h["fn"])) for h in (a_h, j_h, b_h)
+                 if f(h.get("tp")) is not None and f(h.get("fn")) is not None), None)
+    defs = [("FALSE NEGATIVE", RED, "A real plea for help the system never flags. The error that costs lives.",
+             b_h.get("fn"), a_h.get("fn"), f"missed of {num(supp)} real pleas"),
+            ("FALSE POSITIVE", ORANGE, "A false alarm a dispatcher has to read and clear. The error that costs time.",
+             b_h.get("fp"), a_h.get("fp"), "false alarms, all posts")]
+    for i, (name, col, desc, vb, va, cap) in enumerate(defs):
+        y = 2.3 + i * 2.25
+        card(s, 0.75, y, 5.6, 2.05, fill=PANEL, line=col, anim=True)
+        text(s, 1.0, y + 0.18, 5.1, 0.25, name, size=12, color=col, font=MONO, bold=True)
+        text(s, 1.0, y + 0.5, 5.1, 0.6, desc, size=13, color=MUTED)
+        text(s, 1.0, y + 1.1, 4.4, 0.8, [[(num(vb), {"color": DIM}), ("  →  ", {"color": DIM, "size": 24}),
+                                          (num(va), {"color": col})]], size=40, bold=True, font=DISPLAY, anim=True)
+        text(s, 1.0, y + 1.78, 5.1, 0.25, f"before fine-tuning  →  after · {cap}", size=10, color=DIM, font=MONO)
+    rows8 = [("Nemotron base (before)", b_h, BASE), (f"Rescue Radar (after)", a_h, ACCENT), ("TypeSafe Jev judge", j_h, ORANGE)]
+    vmax8 = max([f(r.get("fn")) or 0 for _, r, _ in rows8] + [f(r.get("fp")) or 0 for _, r, _ in rows8] + [1])
+    y = 2.3
+    for title8, kk in (("Missed pleas (false negatives)", "fn"), ("False alarms (false positives)", "fp")):
+        text(s, 6.75, y, 5.8, 0.25, title8.upper(), size=10, color=ACCENT, font=MONO, bold=True)
+        y += 0.3
+        for nm, r, col in rows8:
+            v = f(r.get(kk))
+            text(s, 6.75, y + 0.01, 2.15, 0.22, nm, size=9, font=MONO, color=ACCENT if col == ACCENT else MUTED)
+            rect(s, 8.95, y + 0.04, 2.6, 0.16, fill=PANEL2)
+            if v is not None:
+                rect(s, 8.95, y + 0.04, max(0.02, 2.6 * v / vmax8), 0.16, fill=col, anim=True)
+            rate = r.get("fnr") if kk == "fn" else r.get("fpr")
+            text(s, 11.65, y, 1.0, 0.22, [[(num(v), {"bold": True, "color": TEXT if v is not None else DIM}),
+                                           (f"  {pct(rate)}" if f(rate) is not None else "", {"size": 8, "color": DIM})]],
+                 size=10, font=MONO)
+            y += 0.27
+        y += 0.17
+    card(s, 6.75, y + 0.05, 5.85, 6.75 - y, fill=PANEL, line=LINE, anim=True)
+    agree_b, agree_a = g(before, "vs_jev", "agreement"), g(after, "vs_jev", "agreement")
+    jq = (judge.get("question") or "does someone here need emergency assistance?")
+    judge_txt = [[("SECOND OPINION: TYPESAFE (JEV) JUDGE", {"font": MONO, "size": 9, "bold": True, "color": ORANGE})],
+                 [(f"An independent judgment-only model ({judge.get('model') or 'jev'}): one calibrated probability per post, "
+                   f"no free text, {ms(g(judge, 'latency_ms', 'p50'))} median. Asked of every post: ", {"size": 10.5, "color": MUTED}),
+                  ("“" + jq[:1].lower() + jq[1:] + "”", {"size": 10.5, "color": TEXT})],
+                 [(f"It catches {pct(j_h.get('recall'))} of real pleas but raises {num(j_h.get('fp'))} false alarms "
+                   f"({pct(j_h.get('precision'))} precision) — recall is cheap, precision is the hard part. "
+                   f"Fine-tuning moves our agreement with Jev from {pct(agree_b)} to {pct(agree_a)}.", {"size": 10.5, "color": MUTED})]]
+    text(s, 6.95, y + 0.17, 5.45, 6.5 - y, judge_txt, spacing=5)
+    notes(s, "Our eval functions count the two ways a triage system can be wrong. A false negative is a real plea for help "
+             "that is never flagged: the error that costs lives. A false positive is a false alarm a dispatcher must clear: "
+             "the error that costs time.\n"
+             f"Fine-tuning cuts missed pleas from {num(b_h.get('fn'))} to {num(a_h.get('fn'))} of {num(supp)} "
+             f"({pct(b_h.get('fnr'))} to {pct(a_h.get('fnr'))} miss rate), and the price is more false alarms: "
+             f"{num(b_h.get('fp'))} to {num(a_h.get('fp'))}. For a dispatch queue that trade is the right direction.\n"
+             f"As a second opinion we also scored TypeSafe's Jev, an independent judgment-only model, on the same question. "
+             f"It misses {num(j_h.get('fn'))} pleas and raises {num(j_h.get('fp'))} false alarms: high recall is easy, "
+             "precision is what the fine-tune buys.\n"
+             "Transition: fade.")
+    add_transition_and_timing(s, "fade")
+
+    # 9 ---------------------------------------------------------------- speed and cost
+    s = deck.slide("08-speed")
     _o50, _f50 = f(g(D.ours, "latency_ms", "p50")), f(g(D.front, "latency_ms", "p50"))
-    header(s, 8, "Speed and cost", ("Cheap enough for every post,\nslower per post for now"
+    header(s, 9, "Speed and cost", ("Cheap enough for every post,\nslower per post for now"
                                     if _o50 is not None and _f50 is not None and _o50 > _f50
                                     else "Fast enough for a live feed,\ncheap enough for every post"))
 
@@ -948,9 +1014,9 @@ def build(D, out):
              "Transition: push up.")
     add_transition_and_timing(s, "push")
 
-    # 9 ---------------------------------------------------------------- stack, responsible AI, limits
-    s = deck.slide()
-    header(s, 9, "Stack, safeguards, limits", "Built to be trusted,\nhonest about where it fails")
+    # 10 --------------------------------------------------------------- stack, responsible AI, limits
+    s = deck.slide("09-stack")
+    header(s, 10, "Stack, safeguards, limits", "Built to be trusted,\nhonest about where it fails")
     text(s, 0.75, 2.3, 4.0, 0.25, "SPONSOR STACK", size=11, color=ACCENT, font=MONO, bold=True)
     for i, (h, b) in enumerate([("FIREWORKS", "LoRA fine-tuning on serverless training, plus serving the checkpoint"),
                                 ("NVIDIA", "Nemotron 3.5 Super: the open-weight base model we adapt"),
@@ -984,11 +1050,11 @@ def build(D, out):
              "Transition: fade.")
     add_transition_and_timing(s, "fade")
 
-    # 10 --------------------------------------------------------------- the company, the ask, the close
+    # 11 --------------------------------------------------------------- the company, the ask, the close
     # Mirrors slide 10 of docs/deck/index.html. Qualitative company story; the only numbers are measured costs
     # from results/metrics.json. No prices, customers, partners or market sizes are claimed.
-    s = deck.slide()
-    header(s, 10, "The company", "Rescue Radar as a company", size=32)
+    s = deck.slide("10-next")
+    header(s, 11, "The company", "Rescue Radar as a company", size=32)
     o_cost, f_cost = f(o.get("cost_per_1m_usd")), f(fr.get("cost_per_1m_usd"))
     o_full = f(o.get("cost_per_1m_usd_undiscounted"))
     basis = tag(o).lower() if o_cost is not None else "pending"
