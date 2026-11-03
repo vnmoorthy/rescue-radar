@@ -359,6 +359,48 @@ body.pending .stamp{display:block}
 .links10 a{color:var(--text);text-decoration:none;font:400 13.5px/1.4 var(--mono)}
 .links10 a:hover{color:var(--accent)}
 .links10 a b{color:var(--accent);font-weight:500;margin-right:8px}
+/* Slide 8: the eval functions (FN / FP, before vs after, TypeSafe Jev judge) */
+.ev8{display:grid;grid-template-columns:600px 1fr;gap:44px;margin-top:40px;align-items:start}
+.ev8-defs{display:flex;flex-direction:column;gap:22px}
+.ev8-card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--base);border-radius:12px;padding:20px 24px;box-shadow:var(--card-shadow)}
+.ev8-card.fn{border-left-color:var(--critical)}
+.ev8-card.fp{border-left-color:var(--c-injured)}
+.ev8-card h5{font:600 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;margin:0 0 8px}
+.ev8-card.fn h5{color:var(--critical)}
+.ev8-card.fp h5{color:var(--c-injured)}
+.ev8-card p{font:400 15px/1.45 var(--sans);color:var(--text-2);margin:0 0 12px}
+.ev8-nums{display:flex;align-items:baseline;gap:16px;font:700 44px/1 var(--sans);font-variant-numeric:tabular-nums}
+.ev8-nums .b{color:var(--text-3)}
+.ev8-nums .arrow{font-size:26px;color:var(--text-3)}
+.ev8-card.fn .ev8-nums .a{color:var(--critical)}
+.ev8-card.fp .ev8-nums .a{color:var(--c-injured)}
+.ev8-cap{font:500 12px/1.3 var(--mono);color:var(--text-3);margin-top:10px}
+.ev8-right{display:flex;flex-direction:column;gap:22px}
+.ev8-bars{display:flex;flex-direction:column;gap:20px}
+.ev8-bars .bg-title{font-size:16px}
+.ev8-bars .brow{grid-template-columns:215px 1fr 150px}
+.brow.jev .track i{background:var(--c-injured)}
+.brow.jev .bname{color:var(--c-injured)}
+.brow.base .track i{background:var(--base)}
+.ev8-judge{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 22px;box-shadow:var(--card-shadow)}
+.ev8-judge h5{font:600 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c-injured);margin:0 0 8px}
+.ev8-judge p{font:400 14px/1.5 var(--sans);color:var(--text-2);margin:0 0 8px}
+.ev8-judge p:last-child{margin-bottom:0}
+.ev8-judge p em{color:var(--text);font-style:italic}
+
+/* Faint full-bleed background art (bg/, pre-faded over the dark --bg so text stays readable). Dark theme only. */
+:root[data-theme="dark"] .slide.bgi{background-repeat:no-repeat;background-size:cover;background-position:center}
+:root[data-theme="dark"] .slide.bgi-title{background-image:url(bg/01-title.jpg)}
+:root[data-theme="dark"] .slide.bgi-problem{background-image:url(bg/02-problem.jpg)}
+:root[data-theme="dark"] .slide.bgi-who{background-image:url(bg/03-who.jpg)}
+:root[data-theme="dark"] .slide.bgi-product{background-image:url(bg/04-product.jpg)}
+:root[data-theme="dark"] .slide.bgi-how{background-image:url(bg/05-how.jpg)}
+:root[data-theme="dark"] .slide.bgi-benchmark{background-image:url(bg/06-benchmark.jpg)}
+:root[data-theme="dark"] .slide.bgi-results{background-image:url(bg/07-results.jpg)}
+:root[data-theme="dark"] .slide.bgi-speed{background-image:url(bg/08-speed.jpg)}
+:root[data-theme="dark"] .slide.bgi-stack{background-image:url(bg/09-stack.jpg)}
+:root[data-theme="dark"] .slide.bgi-next{background-image:url(bg/10-next.jpg)}
+
 @media (prefers-reduced-motion:reduce){
   .radar .sweep,.blip,.hose .stream,.pin .halo,.slide.active .pipe .packet{animation:none!important}
   .r{transition:opacity .3s ease!important;transform:none!important}
@@ -371,7 +413,7 @@ body.pending .stamp{display:block}
 <div id="stage" aria-live="polite">
 
 <!-- 1. Title + hook -->
-<section class="slide s1" aria-label="Rescue Radar">
+<section class="slide s1 bgi bgi-title" aria-label="Rescue Radar">
   <div class="sky" aria-hidden="true"><div class="radar intro" id="radar1"><div class="rings"></div><div class="cross"></div><div class="sweep"></div></div></div>
   <div class="horizon" aria-hidden="true"></div>
   <div class="col">
@@ -387,7 +429,7 @@ body.pending .stamp{display:block}
 </section>
 
 <!-- 2. Problem -->
-<section class="slide" aria-label="The problem">
+<section class="slide bgi bgi-problem" aria-label="The problem">
   <div class="kicker r">02 &middot; The problem</div>
   <h2 class="title r" style="--i:1">When the phones jam,<br>the pleas go <em>public</em></h2>
   <div class="grid2">
@@ -408,7 +450,7 @@ body.pending .stamp{display:block}
 </section>
 
 <!-- 3. Who -->
-<section class="slide" aria-label="Who it is for">
+<section class="slide bgi bgi-who" aria-label="Who it is for">
   <div class="kicker r">03 &middot; Who it is for</div>
   <h2 class="title r" style="--i:1">Built for the people<br>who send the boats</h2>
   <div class="cards3">
@@ -423,7 +465,7 @@ body.pending .stamp{display:block}
 </section>
 
 <!-- 4. Product -->
-<section class="slide" aria-label="The product">
+<section class="slide bgi bgi-product" aria-label="The product">
   <div class="kicker r">04 &middot; The product</div>
   <h2 class="title sm r" style="--i:1">A dispatch console that reads every post</h2>
   <div class="console r" style="--i:2">
@@ -437,7 +479,7 @@ body.pending .stamp{display:block}
 </section>
 
 <!-- 5. How -->
-<section class="slide" aria-label="How it works">
+<section class="slide bgi bgi-how" aria-label="How it works">
   <div class="kicker r">05 &middot; How it works</div>
   <h2 class="title r" style="--i:1">One open model,<br>fine-tuned for one job</h2>
   <div class="pipe">
@@ -458,7 +500,7 @@ body.pending .stamp{display:block}
 </section>
 
 <!-- 6. Benchmark design -->
-<section class="slide" aria-label="The benchmark">
+<section class="slide bgi bgi-benchmark" aria-label="The benchmark">
   <div class="kicker r">06 &middot; The benchmark</div>
   <h2 class="title r" style="--i:1">Tested on disasters<br>it has never seen</h2>
   <div class="tl r" style="--i:2" id="tl">
@@ -477,7 +519,7 @@ body.pending .stamp{display:block}
 </section>
 
 <!-- 7. Results -->
-<section class="slide" aria-label="Results">
+<section class="slide bgi bgi-results" aria-label="Results">
   <div class="kicker r">07 &middot; Results vs Claude Opus 5.5 and GPT-6.1 Terra</div>
   <div class="stamp">Results pending</div>
   <h2 class="title sm r" style="--i:1" id="res-title">Fine-tuned open model vs the frontier</h2>
@@ -494,9 +536,40 @@ body.pending .stamp{display:block}
   <div class="sig r" style="--i:6"><div><h5>Is the gap real? McNemar test</h5><p id="sig-mc">pending</p></div><div><h5>Bootstrap, 95% CI</h5><p id="sig-bs">pending</p></div></div>
 </section>
 
-<!-- 8. Speed and cost -->
-<section class="slide" aria-label="Speed and cost">
-  <div class="kicker r">08 &middot; Speed and cost</div>
+<!-- 8. The eval functions -->
+<section class="slide bgi bgi-results" aria-label="The eval functions">
+  <div class="kicker r">08 &middot; The eval functions</div>
+  <div class="stamp">Results pending</div>
+  <h2 class="title sm r" style="--i:1">Two ways to be <em>wrong</em>,<br>counted post by post</h2>
+  <div class="ev8">
+    <div class="ev8-defs">
+      <div class="ev8-card fn r" style="--i:2">
+        <h5>False negative</h5>
+        <p>A real plea for help the system never flags. The error that costs lives.</p>
+        <div class="ev8-nums"><span class="b" id="ev-fn-b">pending</span><span class="arrow">&rarr;</span><span class="a" id="ev-fn-a">pending</span></div>
+        <div class="ev8-cap" id="ev-fn-cap">before fine-tuning &rarr; after</div>
+      </div>
+      <div class="ev8-card fp r" style="--i:3">
+        <h5>False positive</h5>
+        <p>A false alarm a dispatcher has to read and clear. The error that costs time.</p>
+        <div class="ev8-nums"><span class="b" id="ev-fp-b">pending</span><span class="arrow">&rarr;</span><span class="a" id="ev-fp-a">pending</span></div>
+        <div class="ev8-cap" id="ev-fp-cap">before fine-tuning &rarr; after</div>
+      </div>
+    </div>
+    <div class="ev8-right">
+      <div class="ev8-bars r" style="--i:4" id="ev-bars"></div>
+      <div class="ev8-judge r" style="--i:5">
+        <h5>Second opinion: TypeSafe (Jev) judge</h5>
+        <p id="ev-judge-p1">An independent judgment-only model: one calibrated probability per post, no free text.</p>
+        <p id="ev-judge-p2" class="pending-txt">pending</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. Speed and cost -->
+<section class="slide bgi bgi-speed" aria-label="Speed and cost">
+  <div class="kicker r">09 &middot; Speed and cost</div>
   <div class="stamp">Results pending</div>
   <h2 class="title r" style="--i:1" id="t8">Speed and cost,<br>measured on every call</h2>
   <div class="sc">
@@ -505,9 +578,9 @@ body.pending .stamp{display:block}
   </div>
 </section>
 
-<!-- 9. Stack, responsible AI, limits -->
-<section class="slide" aria-label="Stack and responsibility">
-  <div class="kicker r">09 &middot; Stack, safeguards, limits</div>
+<!-- 10. Stack, responsible AI, limits -->
+<section class="slide bgi bgi-stack" aria-label="Stack and responsibility">
+  <div class="kicker r">10 &middot; Stack, safeguards, limits</div>
   <h2 class="title r" style="--i:1">Built to be trusted,<br>honest about where it fails</h2>
   <div class="cols3">
     <div class="col3 r" style="--i:3"><h3>Sponsor stack</h3>
@@ -533,9 +606,9 @@ body.pending .stamp{display:block}
   </div>
 </section>
 
-<!-- 10. The company, the ask, the close -->
-<section class="slide s10" aria-label="Rescue Radar as a company">
-  <div class="kicker r">10 &middot; The company</div>
+<!-- 11. The company, the ask, the close -->
+<section class="slide s10 bgi bgi-next" aria-label="Rescue Radar as a company">
+  <div class="kicker r">11 &middot; The company</div>
   <h2 class="title sm r" style="--i:1">Rescue Radar as a company</h2>
   <div class="co">
     <div class="cell r" style="--i:2"><h4>Who pays</h4><ul>
@@ -1101,6 +1174,63 @@ body.pending .stamp{display:block}
     });
     panel.appendChild(box);
   }
+  /* ---------- slide 8 eval functions (FN/FP + TypeSafe Jev judge), from metrics.json rescue_binary ---------- */
+  function buildEval() {
+    var rb = (CTX.m && CTX.m.rescue_binary) || {};
+    var sys = rb.systems || {};
+    var before = (sys.base_zero || {}).vs_human || null;
+    var after = ((CTX.oursKey && sys[CTX.oursKey]) || {}).vs_human || null;
+    var judge = rb.judge || {}, jh = judge.vs_human || null;
+    function setN(id, v) {
+      var e = $(id); if (!e) return;
+      if (num(v) === null) { e.textContent = 'pending'; e.classList.add('pending-txt'); }
+      else { e.textContent = F.int(v); e.classList.remove('pending-txt'); }
+    }
+    setN('#ev-fn-b', before && before.fn); setN('#ev-fn-a', after && after.fn);
+    setN('#ev-fp-b', before && before.fp); setN('#ev-fp-a', after && after.fp);
+    var full = function (d) { return d && ['tp', 'fn', 'fp', 'tn'].every(function (k) { return num(d[k]) !== null; }); };
+    var supp = full(after) ? after.tp + after.fn : (full(before) ? before.tp + before.fn : null);
+    if (supp !== null) $('#ev-fn-cap').textContent = 'before fine-tuning → after · of ' + F.int(supp) + ' real pleas';
+    if (full(before)) $('#ev-fp-cap').textContent = 'before fine-tuning → after · false alarms across ' + F.int(before.tp + before.fn + before.fp + before.tn) + ' posts';
+    var box = $('#ev-bars'); if (!box) return;
+    box.textContent = '';
+    var rows = [['Nemotron base (before)', 'base', before], ['Rescue Radar (after)', 'ours', after], ['TypeSafe Jev judge', 'jev', jh]];
+    var vmax = 1;
+    rows.forEach(function (r) { var d = r[2]; if (d) ['fn', 'fp'].forEach(function (k) { if (num(d[k]) !== null) vmax = Math.max(vmax, d[k]); }); });
+    [['Missed pleas (false negatives)', 'fn', 'fnr', true], ['False alarms (false positives)', 'fp', 'fpr', false]].forEach(function (grp, gi) {
+      var g = el('div', 'bgroup');
+      var h = el('div', 'bg-head'); h.appendChild(el('span', 'bg-title' + (grp[3] ? ' crit' : ''), grp[0])); g.appendChild(h);
+      rows.forEach(function (r, ri) {
+        var d = r[2], v = d ? num(d[grp[1]]) : null, rate = d ? num(d[grp[2]]) : null;
+        var row = el('div', 'brow ' + r[1]); row.appendChild(el('span', 'bname', r[0]));
+        var tr = el('div', 'track'), fill = el('i');
+        fill.style.setProperty('--w', v === null ? '0%' : Math.max(0.8, v / vmax * 100).toFixed(2) + '%');
+        fill.style.setProperty('--d', (450 + gi * 260 + ri * 90) + 'ms'); tr.appendChild(fill); row.appendChild(tr);
+        var val = el('span', 'bval', v === null ? 'pending' : F.int(v));
+        if (v === null) val.classList.add('pending-txt'); else if (rate !== null) val.appendChild(el('small', null, ' ' + F.pct(rate)));
+        row.appendChild(val); g.appendChild(row);
+      });
+      box.appendChild(g);
+    });
+    var p1 = $('#ev-judge-p1'), p2 = $('#ev-judge-p2');
+    if (p1) {
+      var q = judge.question, lat = num(judge.latency_ms && judge.latency_ms.p50);
+      p1.textContent = 'An independent judgment-only model' + (judge.model ? ' (' + judge.model + ')' : '') +
+        ': one calibrated probability per post, no free text' + (lat !== null ? ', ' + Math.round(lat) + ' ms median' : '') + '.' +
+        (q ? ' Asked of every post: “' + q.charAt(0).toLowerCase() + q.slice(1) + '”' : '');
+    }
+    if (p2) {
+      if (jh && num(jh.recall) !== null) {
+        var aB = num(sys.base_zero && sys.base_zero.vs_jev && sys.base_zero.vs_jev.agreement);
+        var aA = num(CTX.oursKey && sys[CTX.oursKey] && sys[CTX.oursKey].vs_jev && sys[CTX.oursKey].vs_jev.agreement);
+        p2.textContent = 'It catches ' + F.pct(jh.recall) + ' of real pleas but raises ' + F.int(jh.fp) + ' false alarms (' +
+          F.pct(jh.precision) + ' precision) — recall is cheap, precision is the hard part.' +
+          (aB !== null && aA !== null ? ' Fine-tuning moves our agreement with Jev from ' + F.pct(aB) + ' to ' + F.pct(aA) + '.' : '');
+        p2.classList.remove('pending-txt');
+      } else { p2.textContent = 'pending'; p2.classList.add('pending-txt'); }
+    }
+  }
+
   function buildSpeed() {
     var o = CTX.ours || {}, f = CTX.frontier || {};
     var lat = $('#p-lat'); lat.textContent = '';
@@ -1269,6 +1399,7 @@ body.pending .stamp{display:block}
     try { buildMap(); } catch (e) { console.warn('map', e); }
     try { buildTimeline(); } catch (e) { console.warn('timeline', e); }
     try { buildBars(); } catch (e) { console.warn('bars', e); }
+    try { buildEval(); } catch (e) { console.warn('eval', e); }
     try { buildSpeed(); } catch (e) { console.warn('speed', e); }
     try { buildLimits(); } catch (e) { console.warn('limits', e); }
     try { buildBiz(); } catch (e) { console.warn('company', e); }
