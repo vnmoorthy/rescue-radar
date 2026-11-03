@@ -42,6 +42,7 @@
 
 **[Live demo](https://vnmoorthy.github.io/rescue-radar/)** &nbsp;·&nbsp;
 **[Slides](https://vnmoorthy.github.io/rescue-radar/deck/)** &nbsp;·&nbsp;
+**[Pitch deck (.pptx)](https://github.com/vnmoorthy/rescue-radar/raw/main/deck/RescueRadar.pptx)** &nbsp;·&nbsp;
 [Results](#results) &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [Quickstart](#quickstart) &nbsp;·&nbsp;
 [Evaluation design](guide/EVALUATION.md)
 
@@ -69,6 +70,12 @@
 {% endif %}
 
 <!-- growth-sections -->
+## Pitch deck
+
+[![Title slide](assets/screens/deck-1-light.png)](https://vnmoorthy.github.io/rescue-radar/deck/) [![Rescue Radar as a company](assets/screens/deck-10-dark.png)](https://vnmoorthy.github.io/rescue-radar/deck/#10)
+
+Ten slides: the problem, the product, the held-out-disaster benchmark, results against Claude Opus 5.5 and GPT-6.1 Terra, speed and cost, limitations, and Rescue Radar as a company. **[Open the web deck](https://vnmoorthy.github.io/rescue-radar/deck/)** (light and dark, arrow keys to navigate) or **[download the PowerPoint](https://github.com/vnmoorthy/rescue-radar/raw/main/deck/RescueRadar.pptx)** ([source](deck/build_pptx.py), numbers filled from `results/metrics.json`).
+
 ## See it in 60 seconds
 
 <p align="center">
