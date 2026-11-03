@@ -4,6 +4,7 @@ Run:  .venv/bin/python -m rr.server          (RR_PORT, default 8787; RR_HOST, de
 Env:  RR_WARM=0      skip pre-scrubbing the replays in a background thread at startup
       RR_SCRUBBER=regex  force the regex PII scrubber instead of Microsoft Presidio
       RR_STATE_DIR   where queue.db and the scrub cache live (default state/)
+      RR_INGEST=0    skip the live social/news ingest worker (rr.ingest: Reddit + SF news RSS -> classifier -> queue)
       RR_LIVE_MODEL  which weights the live console serves (read only by this server; rr.run_model and rr.promote
                      never see it): unset or "scored" = the checkpoint the benchmark scored as Rescue Radar
                      (data/preds/<ours>.meta.json), "<system>" = that scored system's checkpoint, "latest" =
@@ -31,7 +32,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StrictInt, StrictStr
 from typing_extensions import Annotated
 
-from rr import geo, scrub, store
+from rr import geo, ingest, scrub, store
 from rr.labels import LABELS, RESCUE_CRITICAL
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -416,10 +417,18 @@ def _warm():
             pass
 
 
+def _ingest_classify(texts):
+    """rr.ingest's bridge into the live model: (model name, prediction rows). Raises while it is unavailable."""
+    clf, res = _run_ours(texts)
+    return clf.name, res
+
+
 @asynccontextmanager
 async def lifespan(app):
     if os.environ.get("RR_WARM", "1") != "0":
         threading.Thread(target=_warm, name="rr-warm", daemon=True).start()
+    if os.environ.get("RR_INGEST", "1") != "0":
+        ingest.start(classify=_ingest_classify)
     yield
 
 
@@ -549,6 +558,12 @@ def compare(body: TextIn):
                 "latency_ms": fr.get("latency_ms"), "cost_usd": fr.get("cost_usd"),
                 "model": fr.get("model") or frontier_name(), "in_tok": fr.get("in_tok"), "out_tok": fr.get("out_tok")}
     return {"ours": ours, "frontier": frontier}
+
+
+@app.get("/api/live/social")
+def live_social():
+    """The social/news ingest window: items (scrubbed, newest first), source statuses, model status."""
+    return ingest.snapshot()
 
 
 @app.get("/api/queue")

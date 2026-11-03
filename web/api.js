@@ -76,6 +76,7 @@ function liveAdapter(base) {
     queueCsvUrl: () => u('/queue.csv'),
     results: () => fetchJSON(u('/results')),
     trainLog: () => fetchJSON(u('/train_log')),
+    liveSocial: () => fetchJSON(u('/live/social'), {}, 15000),
   };
 }
 
@@ -128,6 +129,7 @@ function staticAdapter(root) {
     queueCsvUrl: () => null,
     results: () => get('results.json').catch(() => ({ status: 'pending' })),
     trainLog: () => get('train_log.json').catch(() => ({ runs: {} })),
+    liveSocial: async () => ({ enabled: false, static: true, running: false, items: [], sources: [] }),
   };
 }
 

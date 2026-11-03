@@ -139,7 +139,7 @@ export function createLive(root, ctx) {
   const S = {
     city: CITIES[0], windowH: 6, events: new Map(), timers: [], activeView: false,
     map: null, layer: null, renderer: null, markers: new Map(), filter: 'all',
-    lastFetch: {}, feedErr: {}, firstLoad: true,
+    lastFetch: {}, feedErr: {}, firstLoad: true, social: null, socialErr: null,
   };
   const feedOn = Object.fromEntries(S.city.feeds.map(f => [f.id, f.on]));
 
@@ -186,7 +186,9 @@ export function createLive(root, ctx) {
       <section class="panel p-queue" aria-label="What is happening">
         <div class="panel__head"><h2 class="panel__title">Right now</h2><span class="panel__meta" id="lv-brk-meta">&nbsp;</span></div>
         <div class="panel__body" id="lv-breakdown"></div>
-        <div class="panel__body lv-note"><b>What this is.</b> Live 911 dispatch (CAD) records the city publishes as open data — already triaged by human call-takers, shown here as the situational layer a dispatcher would watch next to Rescue Radar's queue. Sensitive call types are published without a location. <b>What it is not yet:</b> live <i>social</i> posts. Classifying those (the model this project built) needs server-side stream ingestion — see How it works.</div>
+        <div class="panel__head panel__head--sub"><h2 class="panel__title">Social &amp; news</h2><span class="panel__meta" id="lv-soc-meta">&nbsp;</span></div>
+        <div class="feed lv-social" id="lv-social" tabindex="0" aria-label="Live social and news items classified by Rescue Radar, newest first"></div>
+        <div class="panel__body lv-note" id="lv-soc-note"></div>
       </section>
     </div>
   </div>`;
@@ -196,6 +198,7 @@ export function createLive(root, ctx) {
     status: $('#lv-status'), n: $('#lv-n'), nSub: $('#lv-n-sub'), crit: $('#lv-crit'), open: $('#lv-open'),
     fresh: $('#lv-fresh'), freshSub: $('#lv-fresh-sub'), feed: $('#lv-feed'), feedMeta: $('#lv-feed-meta'),
     mapMeta: $('#lv-map-meta'), breakdown: $('#lv-breakdown'), brkMeta: $('#lv-brk-meta'), refresh: $('#lv-refresh'),
+    social: $('#lv-social'), socMeta: $('#lv-soc-meta'), socNote: $('#lv-soc-note'),
   };
 
   // ---------- map ----------
@@ -307,6 +310,70 @@ export function createLive(root, ctx) {
   }
   function pollAll(opts) { return Promise.all(S.city.feeds.filter(f => feedOn[f.id]).map(f => poll(f, opts))); }
 
+  // ---------- social & news ingest (server-side: rr/ingest.py classifies live posts with the model) ----------
+  async function pollSocial() {
+    try {
+      S.social = await ctx.api.liveSocial();
+      S.socialErr = null;
+    } catch (err) {
+      S.socialErr = errMessage(err);
+    }
+    paintSocial();
+  }
+  function socialHTML(it) {
+    const crit = !!it.critical;
+    const body = it.url
+      ? `<a href="${esc(it.url)}" target="_blank" rel="noopener noreferrer">${txt(it.text)}</a>` : txt(it.text);
+    const label = it.label
+      ? `<span class="tag ${crit ? 'tag--bad' : ''}">${esc(it.label_name || it.label)}</span>`
+      : '<span class="tag" title="Waiting for the model">classifying…</span>';
+    return `<article class="post${crit ? ' post--crit' : ''}">
+      <div class="post__bar"></div>
+      <div class="post__body">
+        <div class="post__top"><span title="${esc(when({ ts: it.ts }))}">${esc(ago(it.ts))}</span>
+          <span class="post__place">${esc(it.feed || it.source || '')}</span>${label}</div>
+        <div class="post__text">${body}</div>
+        ${it.queued ? '<div class="post__truth"><span class="tag tag--warn">pushed to dispatch queue</span></div>' : ''}
+      </div></article>`;
+  }
+  function paintSocial() {
+    if (ctx.api.mode !== 'live') {
+      el.social.style.display = 'none';
+      el.socMeta.textContent = 'needs the local server';
+      el.socNote.innerHTML = 'Live Reddit posts and SF news headlines, classified by the fine-tuned model as they appear, rescue-critical ones pushed to the dispatch queue. The hosted demo cannot run that half of the pipeline: start the local server (<code>python -m rr.server</code>) to see it.';
+      return;
+    }
+    if (S.socialErr && !S.social) {
+      el.social.style.display = 'none';
+      el.socMeta.textContent = 'unreachable';
+      el.socNote.textContent = `Could not read /api/live/social: ${S.socialErr}`;
+      return;
+    }
+    const d = S.social || {};
+    if (!d.enabled) {
+      el.social.style.display = 'none';
+      el.socMeta.textContent = 'off';
+      el.socNote.textContent = d.detail || 'The ingest worker is off (RR_INGEST=0).';
+      return;
+    }
+    const items = (d.items || []).slice(0, 80);
+    const crit = (d.items || []).filter(x => x.critical).length;
+    el.social.style.display = '';
+    el.socMeta.textContent = `${fmtInt((d.items || []).length)} items · ${fmtInt(crit)} critical`;
+    el.social.innerHTML = items.length ? items.map(socialHTML).join('')
+      : '<div class="feed__empty">Nothing ingested yet — the worker polls every couple of minutes.</div>';
+    const bits = [];
+    for (const s of d.sources || []) {
+      if (s.enabled === false) bits.push(`${s.label}: ${s.detail || 'off'}`);
+      else if (s.ok === false && s.detail) bits.push(`${s.label}: ${s.detail}`);
+    }
+    if (d.model_error) bits.push(`model: ${d.model_error} New items stay “classifying…” until it answers.`);
+    else if (d.model) bits.push(`classified live by ${d.model}`);
+    if (S.socialErr) bits.push(`last poll failed: ${S.socialErr}`);
+    el.socNote.textContent = bits.join(' · ');
+    el.socNote.style.display = bits.length ? '' : 'none';
+  }
+
   // ---------- paint ----------
   function eventHTML(e) {
     const crit = e.priority === 'crit';
@@ -399,6 +466,7 @@ export function createLive(root, ctx) {
       S.timers.push(setInterval(() => { if (S.activeView && feedOn[f.id]) poll(f); }, f.pollMs));
     }
     S.timers.push(setInterval(() => { if (S.activeView) paint(); }, 30000)); // keep "ago" labels honest
+    S.timers.push(setInterval(() => { if (S.activeView && ctx.api.mode === 'live') pollSocial(); }, 60000));
   }
   function stopTimers() { for (const t of S.timers) clearInterval(t); S.timers = []; }
 
@@ -409,6 +477,7 @@ export function createLive(root, ctx) {
       if (S.map) setTimeout(() => S.map.invalidateSize(), 60);
       const stale = !Object.keys(S.lastFetch).length || Math.max(...Object.values(S.lastFetch)) < Date.now() - 120000;
       if (stale) pollAll();
+      pollSocial();
       startTimers();
     },
     deactivate() { S.activeView = false; stopTimers(); },

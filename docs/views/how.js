@@ -24,7 +24,7 @@ export function createHow(root, ctx) {
     const fact = (v, k) => `<div class="fact"><div class="fact__v num">${v == null ? 'n/a' : esc(typeof v === 'number' ? fmtInt(v) : v)}</div><div class="fact__k">${esc(k)}</div></div>`;
     root.innerHTML = `
       <div class="view-head"><div><div class="eyebrow">View 5 · architecture</div><h1>How it works</h1>
-        <p>Rescue Radar classifies every post (a replay of recorded 2019 posts, or text you paste or upload; the Live city view streams real 911 dispatch open data, but live <i>social</i>-stream ingestion is not built yet) into the 10 HumAID humanitarian categories, redacts personal data before a dispatcher reads it, and pushes rescue-critical ones to a priority queue. A human makes every call.</p></div></div>
+        <p>Rescue Radar classifies every post (a replay of recorded 2019 posts, text you paste or upload, or — with the local server running — live Reddit posts and SF news headlines ingested by rr/ingest.py; the Live city view also streams real 911 dispatch open data) into the 10 HumAID humanitarian categories, redacts personal data before a dispatcher reads it, and pushes rescue-critical ones to a priority queue. A human makes every call.</p></div></div>
       <div class="how">
         <section class="panel" aria-label="Architecture diagram">
           <div class="panel__head"><h2 class="panel__title">Pipeline</h2><span class="panel__meta">serving path on top, evaluation loop below</span></div>
@@ -60,7 +60,7 @@ export function createHow(root, ctx) {
               <li>Place names come from a small gazetteer, so pins are approximate and many posts have no place.</li>
               <li>Some categories are rare (missing or found people), so their scores are noisy.</li>
               <li>Redaction lowers PII exposure but does not guarantee it is gone. It applies to what the dispatcher sees: the raw post is sent to the model providers (Fireworks; Anthropic or OpenAI for the frontier comparison).</li>
-              <li>No live stream ingestion yet: the console replays recorded 2019 posts or classifies pasted and uploaded text.</li>
+              <li>Live social ingestion (Reddit + SF news RSS) runs with the local server only, and Reddit needs a free API credential; the hosted demo streams the keyless 911 open-data feeds. X has no free API and Facebook offers no public one, so those streams are out for now.</li>
             </ul></div></section>
           <section class="panel"><div class="panel__head"><h2 class="panel__title">Data</h2></div><div class="panel__body">
             <ul class="list">

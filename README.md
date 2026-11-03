@@ -181,7 +181,7 @@ Small classes have wide intervals: read per-class numbers for categories with fe
 
 ## How it works
 
-1. **Ingest.** Posts arrive one by one. The demo replays the real 2019 disaster tweets in their original order (a tweet ID is a Twitter snowflake, so its post time is `(id >> 22) + 1288834974657` ms), or classifies text you paste or upload. The Live city view additionally polls a real city's open 911 dispatch feeds (San Francisco today); live *social*-stream ingestion is not built yet.
+1. **Ingest.** Posts arrive one by one. The demo replays the real 2019 disaster tweets in their original order (a tweet ID is a Twitter snowflake, so its post time is `(id >> 22) + 1288834974657` ms), or classifies text you paste or upload. The Live city view additionally polls a real city's open 911 dispatch feeds (San Francisco today), and with the local server running, `rr/ingest.py` also ingests live social and news sources (Reddit and SF news RSS today), classifies each new item with the model, and pushes rescue-critical ones into the queue.
 2. **Classify.** One instruction prompt with the 10 category definitions, one label out. The LoRA-tuned Nemotron runs on Fireworks serverless sampling at temperature 0; its reasoning block is closed in the prompt so it answers with the label alone.
 3. **Prioritize.** Rescue-critical labels (`requests_or_urgent_needs`, `injured_or_dead_people`, `missing_or_found_people`) go to the priority queue. Everything else stays in the situational-awareness feed.
 4. **Protect.** Before a person reads a post, `rr/scrub.py` replaces phone numbers, emails, handles, URLs and street addresses with placeholders, and people's names too when Microsoft Presidio is installed (a regex-only engine runs otherwise). This is best effort, and it applies to what the dispatcher sees: the raw post is what goes to the model providers.
@@ -288,7 +288,7 @@ python -m rr.evaluate    # score every system, write results/metrics.json
 python -m rr.server      # dispatch console and API
 ```
 
-Open **http://localhost:8787**. No keys at hand? The [live demo](https://vnmoorthy.github.io/rescue-radar/) replays the recorded predictions with no backend at all.
+Open **http://localhost:8787**. The server also starts a live ingest worker (`rr/ingest.py`) feeding the Live city view's Social & news panel: SF news RSS out of the box, plus Reddit once `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET` (a free [script app](https://www.reddit.com/prefs/apps)) are in `.env`; `RR_INGEST=0` turns it off. No keys at hand? The [live demo](https://vnmoorthy.github.io/rescue-radar/) replays the recorded predictions with no backend at all.
 
 ## Reproduce the benchmark
 
@@ -386,7 +386,7 @@ What exists today is a working dispatch console, an HTTP API and a held-out benc
 | Surface | What it is | Status |
 | --- | --- | --- |
 | Dispatch console | Map, priority queue, situational feed, dispatch / resolve / dismiss with notes, CSV export | Built (this repo) |
-| Live city feed | Real 911 dispatch calls from a city's open-data feeds on the console map and feed (San Francisco today) | Built (this repo); more cities and live social ingestion are roadmap |
+| Live city feed | Real 911 dispatch calls from a city's open-data feeds on the console map and feed (San Francisco today) | Built (this repo), including server-side social/news ingestion (Reddit + SF news RSS) classified live by the model; more cities are roadmap |
 | Triage API | `/api/classify` and the queue endpoints, for dispatch and emergency-management software | Built; a product needs authentication, rate limits and an uptime commitment |
 | Private deployment | The open-weight base model plus our adapter, run in the customer's own cloud or data center | Planned: adapter export is not built yet |
 | Standard alert export | Queue items as Common Alerting Protocol (CAP) messages for dispatch systems | Planned |
@@ -470,7 +470,7 @@ We tried, and measured it. On the 2,592 posts both answered, Claude Opus 5.5, 20
 ## Roadmap
 
 - [ ] Dedicated Fireworks deployment of the promoted model for steady latency at disaster-time volume
-- [ ] Live social ingestion behind the Live city view: Reddit (OAuth API) and local-news RSS polled server-side and classified by the model; X and Facebook feeds depend on paid or partner API access
+- [x] Live social ingestion behind the Live city view: Reddit (OAuth API) and local-news RSS polled server-side (`rr/ingest.py`) and classified by the model; X and Facebook feeds still depend on paid or partner API access
 - [ ] More cities in the Live city view (any city publishing CAD dispatch open data can be added as one adapter function)
 - [ ] Microsoft Foundry deployment path for agencies that run on Azure
 - [ ] Learn from dispatcher actions: dispatched and dismissed items become new training labels
