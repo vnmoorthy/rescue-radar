@@ -65,14 +65,14 @@ any test event: 1 of 61,100 training-event tweets were removed.
 
 | Key | System | Why it is here |
 | --- | --- | --- |
-| `rescue_radar` | Nemotron 3.5 Super + LoRA, trained on every example in `data/train_sft.jsonl` | The pre-registered main system: the newest checkpoint saved by 14:55 PT was fixed as the headline before test-set scoring |
+| `rescue_radar` | Nemotron 3.5 Super + LoRA on `data/train_sft.jsonl` (13,839 examples; the scored step-275 checkpoint of the 432-step run saw 8,800 of them) | The pre-registered main system: the newest checkpoint saved by 14:55 PT was fixed as the headline before any fine-tuned model was scored on the test set |
 | `rescue_radar_quick` | The same recipe on a smaller, class-balanced subset | Ablation: how much does more data help? |
 | `base_zero` | Nemotron 3.5 Super without fine-tuning, same prompt, same serving path | Isolates the effect of LoRA |
 | `opus_zero` | Claude Opus 5.5, zero-shot | Frontier reference |
 | `opus_few` | Claude Opus 5.5, 20-shot | Stronger frontier reference |
 | `gpt_zero`, `gpt_few` | GPT-6.1 Terra (OpenAI API), zero-shot and 20-shot | Second frontier reference, **added after pre-registration** (not part of the pre-registered protocol) |
 
-The headline system, metrics and tests were written down before scoring in [`guide/PREREGISTRATION.md`](../guide/PREREGISTRATION.md).
+The headline system, metrics and tests were written down before any fine-tuned model was scored on the test set in [`guide/PREREGISTRATION.md`](../guide/PREREGISTRATION.md).
 
 ## 5. Metrics
 
@@ -109,8 +109,8 @@ Current cost notes:
 - **GPT-6.1 Terra, zero-shot**: measured tokens x OpenAI list price ($1 in / $5 out per 1M tokens, reasoning tokens included).
 - **Claude Opus 5.5, 20-shot**: measured tokens x Anthropic list price ($4 in / $20 out per 1M tokens, thinking tokens included).
 - **Claude Opus 5.5, zero-shot**: measured tokens x Anthropic list price ($4 in / $20 out per 1M tokens, thinking tokens included).
-- **Rescue Radar, main run (13,839 examples)**: measured tokens x Fireworks published sampling rate for Nemotron 3.5 Super ($0.57 prefill / $1.44 sample per 1M tokens, includes a limited-time 50% discount; about 2x without it) (without the discount: $342 per 1M posts).
-- **Rescue Radar, small-data run (3,939 examples)**: measured tokens x Fireworks published sampling rate for Nemotron 3.5 Super ($0.57 prefill / $1.44 sample per 1M tokens, includes a limited-time 50% discount; about 2x without it) (without the discount: $342 per 1M posts).
+- **Rescue Radar, main run (step 275 of 432: 8,800 of 13,839 examples seen)**: measured tokens x Fireworks published sampling rate for Nemotron 3.5 Super ($0.57 prefill / $1.44 sample per 1M tokens, includes a limited-time 50% discount; about 2x without it) (without the discount: $342 per 1M posts).
+- **Rescue Radar, small-data run (step 123 of 123: 3,936 of 3,939 examples seen)**: measured tokens x Fireworks published sampling rate for Nemotron 3.5 Super ($0.57 prefill / $1.44 sample per 1M tokens, includes a limited-time 50% discount; about 2x without it) (without the discount: $342 per 1M posts).
 
 Latency depends on load and concurrency: open models were called through shared Fireworks serverless capacity
 with parallel workers, Claude through the public Anthropic API. A dedicated deployment would change both latency

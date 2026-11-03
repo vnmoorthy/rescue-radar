@@ -12,7 +12,8 @@ const TIME_SCALE = 0.25; // the recorded race plays at 4x speed
 export function createH2H(root, ctx) {
   const { api, meta } = ctx;
   const oursName = (meta.model && meta.model.name) || 'Rescue Radar';
-  const frName = (meta.frontier && meta.frontier.name) || 'Claude Opus 5.5';
+  let frName = (meta.frontier && meta.frontier.name) || 'Claude Opus 5.5';
+  let compared = false;
   root.innerHTML = `
     <div class="view-head">
       <div><div class="eyebrow">View 3 · same prompt, same post</div><h1>Head-to-head</h1>
@@ -34,7 +35,7 @@ export function createH2H(root, ctx) {
     </section>
     <section class="panel race" aria-label="Recorded race">
       <div class="panel__head"><h2 class="panel__title">Recorded race · 20 random test posts</h2>
-        <span class="panel__meta"><span>replays recorded predictions at 4x speed, no live calls</span><button type="button" class="btn btn--primary btn--sm" id="race-go">Run 20 random test posts</button></span></div>
+        <span class="panel__meta"><span>replays recorded predictions at 4x speed, no live calls · pace = latency recorded in the batch evaluation run, not live speed</span><button type="button" class="btn btn--primary btn--sm" id="race-go">Run 20 random test posts</button></span></div>
       <div class="lanes" id="lanes">
         ${laneHTML('ours', 'Rescue Radar', 'recorded predictions on the held-out set')}
         ${laneHTML('fr', 'Claude Opus 5.5', 'recorded 20-shot predictions (opus_few)')}
@@ -87,6 +88,7 @@ export function createH2H(root, ctx) {
     out.innerHTML = versusHTML(null, null, 'loading');
     try {
       const res = await api.compare(text);
+      compared = true;
       out.innerHTML = versusHTML(res.ours, res.frontier);
     } catch (e) {
       if (e.isStatic) out.innerHTML = staticNote('A live head-to-head');
@@ -179,7 +181,15 @@ export function createH2H(root, ctx) {
       : l.missing ? `<span class="muted">no recorded predictions yet for ${fmtInt(l.missing)} of ${n} posts (pending)</span>` : `<span class="muted">0/${n} · waiting</span>`;
   }
 
-  return { activate() {}, deactivate() {} };
+  // The idle card names the frontier the server routes to now (it can change after page load).
+  function syncFrontier() {
+    const n = (ctx.meta && ctx.meta.frontier && ctx.meta.frontier.name) || frName;
+    if (n === frName) return;
+    frName = n;
+    if (!compared && !out.querySelector('.spinner')) out.innerHTML = versusHTML(null, null);
+  }
+  document.addEventListener('rr:health', syncFrontier);
+  return { activate() { syncFrontier(); }, deactivate() {} };
 }
 
 function laneHTML(key, name, model) {

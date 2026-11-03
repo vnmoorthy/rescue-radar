@@ -4,8 +4,10 @@ export const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: r
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
+// Upstream data decoded 5-hex-digit emoji escapes as a 4-digit one plus a stray digit (U+1F1F + '2' for U+1F1F2).
+export const fixEmoji = s => String(s ?? '').replace(/([\u1F00-\u1FFF])([0-9A-Fa-f])/g, (m, c, d) => String.fromCodePoint(parseInt(c.codePointAt(0).toString(16) + d, 16)));
 export function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return fixEmoji(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 // Tweets arrive with HTML entities (&amp;) still encoded; decode the common ones, then escape for display.

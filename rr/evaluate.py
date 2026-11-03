@@ -24,7 +24,7 @@ OPUS_IN, OPUS_OUT = 4.0, 20.0
 # 50% discount, so the undiscounted rate is about 2x).
 FW_IN, FW_OUT = 0.57, 1.44
 SYSTEMS = {
-    "rescue_radar": ("Rescue Radar (Nemotron 3.5 Super + LoRA, 13.8k-example run)", "open-finetuned"),
+    "rescue_radar": ("Rescue Radar (Nemotron 3.5 Super + LoRA, step 275: 8,800 examples seen)", "open-finetuned"),
     "rescue_radar_quick": ("Rescue Radar, small-data ablation (3,939 examples)", "open-finetuned"),
     "base_zero": ("Nemotron 3.5 Super, no fine-tuning", "open-base"),
     "opus_few": ("Claude Opus 5.5, 20-shot", "frontier"),
@@ -215,11 +215,12 @@ def main():
                               "critical_recall_delta_ci95": ci(d["critical_recall"]),
                               "a_wins": int((d["macro_f1"] > 0).sum()), "n": B, "unit": "tweet, resampled within each disaster"},
             })
-    train_examples = {"rescue_radar": 13839, "rescue_radar_quick": 3939}
+    # examples actually seen: the main run was frozen at step 275 of 432 (275 x 32 = 8,800 of a 13,839 pool)
+    train_examples = {"rescue_radar": 8800, "rescue_radar_quick": 3939}
     out = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "eval": {"n": len(ev), "events": {e: int((ev_idx == i).sum()) for i, e in enumerate(events)},
-                 "train_events": 15, "test_events": 4, "train_examples": train_examples.get(ours),
+                 "train_events": 15, "test_events": 4, "train_examples": train_examples.get(ours), "train_pool": 13839 if ours == "rescue_radar" else 3939,
                  "split": "train on 15 disasters from 2016-2018, test on 4 unseen disasters from 2019",
                  "bootstrap_resamples": B, "preregistration": "guide/PREREGISTRATION.md",
                  "critical_support": int(CRIT[y].sum())},

@@ -2,7 +2,7 @@
 # Demo runbook (10 minutes)
 
 For the presenter. Numbers on this page are rendered from `results/metrics.json`
-(generated 2026-11-02T15:26:18). If one shows `n/a`, do not
+(generated 2026-11-02T16:03:48). If one shows `n/a`, do not
 say a number out loud: point at the Benchmark view instead.
 
 **Headline to remember:** paired on the 2,592 posts (from 4 disasters our fine-tune
@@ -46,8 +46,50 @@ Paste-ready posts for Head-to-Head:
 | 4:30 | **Head-to-Head** (key 3) | Paste post 1, then post 2. | "Same instructions to both; the frontier model also gets 20 examples. Our fine-tuned Nemotron on Fireworks next to the frontier model named on the card (Claude Opus 5.5, or GPT-6.1 Terra while the Anthropic account is capped): label, latency, cost per post." |
 | 6:00 | **Benchmark** (key 4) | Show the table and the intervals. | "3,001 posts, 4 unseen disasters; paired on the 2,592 both systems answered. Rescue-critical recall 85.3% vs 68.8%, interval +11.2 to +21.9 pts: a real gain. Macro-F1 69.2% vs 63.7%, interval +2.6 to +8.5 pts. McNemar p = 0.013." |
 | 7:30 | **How it works** (key 5) | Walk the pipeline. | "Trained on 15 disasters from 2016 to 2018 with LoRA on Fireworks serverless training. Base model NVIDIA Nemotron 3.5 Super. The live console serves the same checkpoint the benchmark scored; the header badge says so." (Only if the badge reads "scored".) |
-| 8:30 | Deck, last slides | Limits and next steps. | "Old Twitter data, small urgent classes, non-commercial dataset license, human in the loop. Next: a dedicated Fireworks deployment and Microsoft Foundry, neither built yet." |
-| 9:30 | Deck, close | Show the repo and live demo URLs. | "Everything is open: github.com/vnmoorthy/rescue-radar." |
+| 8:30 | Deck, slide 9 | Limits and next steps. | "Old Twitter data, small urgent classes, non-commercial dataset license, human in the loop. Next: a dedicated Fireworks deployment and Microsoft Foundry, neither built yet." |
+| 9:00 | Deck, slide 10 (the company) | Give the 60-second company close below, word for word; leave the slide up for questions. | Ends on: "Everything is open: github.com/vnmoorthy/rescue-radar." |
+
+## 9:00 to 10:00: the company close (60 seconds)
+
+On slide 10, "Rescue Radar as a company". About 150 words; every number comes from `results/metrics.json`.
+
+> "Rescue Radar is a company, not just a model. Who pays: county and city emergency operations centers, 911 centers,
+> state emergency management and relief NGOs. They get the dispatch console you just saw, an API that screens posts
+> for their own tools, and, planned but not built yet, private deployment in the agency's own cloud. Pricing is an annual subscription per
+> agency, budgeted before the storm, with a usage tier for surges; the pilots will set the price. The margin is there:
+> screening a million posts costs us $171, measured, against $8,738
+> on Claude, and $342 even at full price. It compounds: every dispatcher decision
+> becomes a new label, and open weights give an agency a path to running it privately. We start with pilot operations centers next
+> hurricane season, then dispatch-software partners and new regions. We're asking for pilot partners, dedicated
+> Fireworks capacity and introductions to dispatch software teams. Everything is open: github.com/vnmoorthy/rescue-radar."
+
+Do not add a price, a market size, a customer or a partner name: there are none yet.
+
+## Investor questions (honest answers)
+
+**How big is the market, and who signs the check?**
+We have not sized it, and we will not quote a number we cannot defend. The buyers are emergency operations centers,
+911 centers, state emergency management and relief NGOs, which buy software from annual budgets. We have no
+customers, letters of intent or pilots yet; recruiting pilot operations centers and one relief NGO is the first job
+of the next 90 days, and those pilots will tell us what an agency will pay.
+
+**What stops a frontier lab or a dispatch-software vendor from building this?**
+The model alone is not a moat: anyone can fine-tune an open model. What we have today is a measured edge on this one
+task: on the 2,592 posts from unseen disasters that both systems answered, rescue-critical recall is
+85.3% vs 68.8% for Claude Opus 5.5, 20-shot, while costing
+51.1x less per post. The durable parts still have to be
+built: dispatcher decisions as new labels, private deployment on open weights, and integration with the dispatch
+software agencies already run. We see dispatch-software vendors as partners rather than competitors, but no
+partnership exists yet.
+
+**Are the unit economics real, and can you sell it?**
+The cost is measured: tokens counted on every benchmark call times published prices, $171
+per million posts vs $8,738. It includes a limited-time 50% Fireworks discount; at full
+price it is $342, still 25.5x
+cheaper. Two caveats: it is slower today (median 3.37 s per post vs 1.31 s
+on shared serverless capacity), and the dedicated deployment that fixes latency will cost more, which we have not
+measured. And the training data (HumAID) is licensed non-commercial, so a commercial product retrains on licensed or
+agency data with the same code.
 
 ## Fallback plan
 
@@ -63,7 +105,7 @@ Paste-ready posts for Head-to-Head:
 
 **How do you know it is not memorizing the disasters?**
 We split by event: trained on 15 disasters from 2016 to 2018, tested on 4
-from 2019 the model never saw, and removed training tweets duplicated in the test events (1 tweets).
+from 2019 the model never saw, and removed training tweets duplicated in the test events (1 tweet).
 
 **Is the difference with Claude statistically real?**
 Paired on the 2,592 posts both answered: Rescue Radar right and Claude wrong on 291
@@ -81,7 +123,7 @@ We report both zero-shot (62.2% macro-F1) and 20-shot (63.7%).
 
 **What did fine-tuning add?**
 The same Nemotron without LoRA, served the same way, scores 57.6% macro-F1 and
-65.3% rescue-critical recall; with LoRA, 69.2% and 84.7%.
+65.4% rescue-critical recall; with LoRA, 69.2% and 84.7%.
 
 **What does it cost to run?**
 $171 per million posts for Rescue Radar vs $8,738 for

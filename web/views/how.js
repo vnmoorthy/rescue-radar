@@ -103,7 +103,7 @@ function diagram(ev, nEval, nTrain) {
     ${box(220, 22, 250, 108, 'Classifier', 'Rescue Radar', ['Nemotron 3.5 Super + LoRA', 'served on Fireworks', '10 HumAID categories'], 'box--accent')}
     ${box(510, 30, 170, 92, 'Privacy', 'PII redaction', ['before a human reads it:', 'names, phones, links'])}
     ${box(730, 10, 170, 74, 'Rescue-critical', 'Priority queue', ['dispatch, resolve, notes'], 'box--crit')}
-    ${box(730, 98, 170, 74, 'Everything', 'Feed + map', ['every post, pinned if placed'])}
+    ${box(730, 98, 170, 74, 'Everything', 'Feed + map', ['all posts, pinned if placed'])}
     ${box(940, 50, 150, 82, 'Human', 'Dispatcher', ['decides every call', 'notes, CSV export'])}
     <path class="flow flow--anim" d="M180 76 H218"/>
     <path class="flow flow--anim" d="M470 76 H508"/>
@@ -115,7 +115,7 @@ function diagram(ev, nEval, nTrain) {
     <text class="t3" x="16" y="234">Evaluation loop · offline, pre-registered</text>
     ${box(20, 250, 200, 92, 'HumAID train', `${nTr} disasters`, ['2016–2018 hurricanes, floods,', `quakes, fires${nTrain ? ` · ${fmtInt(nTrain)} examples` : ''}`])}
     ${box(260, 250, 200, 92, 'Fine-tune', 'LoRA SFT', ['Fireworks serverless training', 'base: Nemotron 3.5 Super'])}
-    ${box(500, 250, 210, 92, 'Held out', `${nTe} unseen disasters`, ['2019: Dorian, Idai, Pakistan', `quake, Midwest floods${nEval ? ` · ${fmtInt(nEval)} posts` : ''}`])}
+    ${box(500, 250, 228, 92, 'Held out', `${nTe} unseen disasters`, ['2019: Dorian, Idai, Pakistan', `quake, Midwest floods${nEval ? ` · ${fmtInt(nEval)} posts` : ''}`])}
     ${box(750, 250, 160, 92, 'Frontier baselines', 'Claude Opus 5.5', ['+ GPT-6.1 Terra; same', 'instructions + 20 shots'])}
     ${box(750, 356, 160, 66, 'Also scored', 'Nemotron base', ['the untuned "before"'])}
     ${box(945, 250, 145, 92, 'Scorecard', 'Benchmark', ['F1, critical recall,', 'cost, latency,', 'McNemar, bootstrap'])}
@@ -124,7 +124,7 @@ function diagram(ev, nEval, nTrain) {
     <text class="t2" x="372" y="186">LoRA weights</text>
     <path class="flow flow--muted" d="M600 250 C600 190 430 190 430 132"/>
     <text class="t2" x="540" y="196">scored on</text>
-    <path class="flow flow--muted" d="M710 296 H748"/>
+    <path class="flow flow--muted" d="M728 296 H748"/>
     <path class="flow flow--muted" d="M910 296 H943"/>
     <path class="flow flow--muted" d="M910 385 C930 385 930 330 943 330"/>
     <path class="flow flow--muted" d="M470 120 C900 200 1015 190 1015 248"/>

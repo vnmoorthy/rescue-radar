@@ -57,10 +57,14 @@ export class QueueStore {
         job.resolve(cur || saved);
         this.emit({ type: 'update', item: cur || saved });
       }).catch(e => {
+        // Drop the optimistic item so the queue never shows a 'ghost' the server does not have, and add() can retry.
         job.local._pending = false;
         job.local._error = errMessage(e);
+        if (this.byPost.get(job.post.post_id) === job.local) this.byPost.delete(job.post.post_id);
+        const at = this.items.indexOf(job.local);
+        if (at >= 0) this.items.splice(at, 1);
         if (!this.errorShown) { this.errorShown = true; toast(`Queue sync failed: ${errMessage(e)}`, 'error'); setTimeout(() => { this.errorShown = false; }, 8000); }
-        this.emit({ type: 'update', item: job.local });
+        this.emit({ type: 'load' });
         job.reject(e);
       }).finally(() => {
         this.inflight--;

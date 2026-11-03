@@ -101,5 +101,10 @@ d.setAttribute('data-theme',t);d.setAttribute('data-theme-src',src);})();</scrip
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script type="module" src="app.js?v=sunrise-2"></script>
+<script>/* Watchdog: if any console module fails to load, main() never runs. Say so instead of hanging on "Connecting". */
+setTimeout(function(){if(window.__rrBooted)return;var msg='Could not load the console scripts. Reload the page.';
+var h=document.getElementById('health');if(h)h.textContent=msg;var m=document.getElementById('main');
+if(m&&!document.getElementById('boot-fail')){var d=document.createElement('p');d.id='boot-fail';d.setAttribute('role','alert');d.style.cssText='margin:16px;padding:12px 14px;border:1px solid var(--bad);border-radius:8px';
+d.innerHTML=msg+' <button type="button" class="btn btn--sm" onclick="location.reload()">Reload</button>';m.prepend(d);}},10000);</script>
 </body>
 </html>

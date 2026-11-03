@@ -255,7 +255,7 @@ export function createReplay(root, ctx) {
   function renderFeedFull() {
     S.buffered = 0;
     if (!S.feedPosts.length) {
-      el.feed.innerHTML = `<div class="feed__empty">${S.loading ? '<span class="spinner"></span> Loading replay…' : 'Press <kbd>Space</kbd> or Play to start the replay.'}</div>`;
+      el.feed.innerHTML = `<div class="feed__empty">${S.loading ? `<span class="spinner"></span> Loading replay…${api.mode === 'live' ? '<br><span class="muted">The first load after a server restart also warms up the PII scrubber and can take about 40 s.</span>' : ''}` : 'Press <kbd>Space</kbd> or Play to start the replay.'}</div>`;
       return;
     }
     el.feed.innerHTML = S.feedPosts.slice().reverse().map(p => postHTML(p, false)).join('');
@@ -374,7 +374,8 @@ export function createReplay(root, ctx) {
     for (const p of batch) account(p);
     const pulseFrom = batch.length - 3;
     batch.forEach((p, i) => addMarker(p, animate && i >= pulseFrom && labelOf(p) && labelOf(p).critical));
-    feedAdd(batch, animate && batch.length <= 6 && !reducedMotion());
+    // Above 10x posts arrive faster than the 350 ms fade, so the newest ones would always be mid-fade: no animation then.
+    feedAdd(batch, animate && batch.length <= 6 && !reducedMotion() && S.speed !== 'max' && S.speed <= 10);
     for (const p of batch) {
       const src = labelOf(p);
       if (src && src.critical && !queue.has(p.id)) {
@@ -554,7 +555,8 @@ export function createReplay(root, ctx) {
     counts.active = (counts.open || 0) + (counts.dispatched || 0);
     root.querySelectorAll('[data-count]').forEach(s => { s.textContent = fmtInt(counts[s.dataset.count] || 0); });
     el.qopen.textContent = `${fmtInt(counts.open || 0)} open`;
-    const list = queue.items.filter(qMatches).slice(0, 250);
+    const matching = queue.items.filter(qMatches);
+    const list = matching.slice(0, 250);
     const focused = el.qlist.contains(document.activeElement) && document.activeElement.classList.contains('qitem__note');
     const want = new Set(list.map(qKey));
     for (const [k, node] of qEls) if (!want.has(k) || !node.isConnected) { if (!(focused && node.contains(document.activeElement))) { node.remove(); qEls.delete(k); } }
@@ -591,6 +593,12 @@ export function createReplay(root, ctx) {
     const empty = el.qlist.querySelector('.queue__empty');
     if (!list.length && !empty) el.qlist.insertAdjacentHTML('beforeend', `<div class="queue__empty">${queue.items.length ? 'Nothing in this filter.' : 'Rescue-critical posts flagged by the model land here.'}</div>`);
     if (list.length && empty) empty.remove();
+    let more = el.qlist.querySelector('.queue__more');
+    if (matching.length > list.length) {
+      if (!more) { more = document.createElement('div'); more.className = 'queue__more'; }
+      more.textContent = `Showing ${fmtInt(list.length)} of ${fmtInt(matching.length)} · Export CSV for all`;
+      el.qlist.append(more);
+    } else if (more) more.remove();
   }
   function schedQueuePaint() { if (!qPaintQueued) { qPaintQueued = true; nextFrame(paintQueue); } }
   queue.on(schedQueuePaint);

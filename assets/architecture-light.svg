@@ -81,7 +81,7 @@
 <text x="48" y="464" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" letter-spacing="1.75" fill="#A85F00">TRIAGE IN REAL TIME  ·  ONLINE</text>
 <rect x="48" y="480" width="178" height="214" rx="10" fill="#FFFFFF" stroke="#D6D3C9" stroke-width="1.4"/>
 <text x="62" y="507" font-family="'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" font-weight="500" fill="#11120F">posts</text>
-<text x="62" y="530.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Live posts, or a replay</text>
+<text x="62" y="530.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">Pasted posts, or a replay</text>
 <text x="62" y="548.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">of the 2019 disasters</text>
 <text x="62" y="567.0" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">in original order</text>
 <text x="62" y="585.5" font-family="'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.4" fill="#46463F">(time decoded from</text>

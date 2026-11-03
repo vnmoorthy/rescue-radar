@@ -54,8 +54,51 @@ Paste-ready posts for Head-to-Head:
 | 4:30 | **Head-to-Head** (key 3) | Paste post 1, then post 2. | "Same instructions to both; the frontier model also gets 20 examples. Our fine-tuned Nemotron on Fireworks next to the frontier model named on the card (Claude Opus 5.5, or GPT-6.1 Terra while the Anthropic account is capped): label, latency, cost per post." |
 | 6:00 | **Benchmark** (key 4) | Show the table and the intervals. | "{{ num(eval_n) }} posts, {{ num(test_events) }} unseen disasters; paired on the {{ num(cmp.n) }} both systems answered. Rescue-critical recall {{ pct(sh_a.critical_recall) }} vs {{ pct(sh_b.critical_recall) }}, interval {{ ci_pts(bs.critical_recall_delta_ci95) }}{{ ": a real gain" if cr_side == "above" else "" }}. Macro-F1 {{ pct(sh_a.macro_f1) }} vs {{ pct(sh_b.macro_f1) }}, interval {{ ci_pts(bs.macro_f1_delta_ci95) }}{{ ": level, within noise" if mf_side == "spans" else "" }}. McNemar {{ pval(cmp.mcnemar.p) }}." |
 | 7:30 | **How it works** (key 5) | Walk the pipeline. | "Trained on {{ num(train_events) }} disasters from 2016 to 2018 with LoRA on Fireworks serverless training. Base model NVIDIA Nemotron 3.5 Super. The live console serves the same checkpoint the benchmark scored; the header badge says so." (Only if the badge reads "scored".) |
-| 8:30 | Deck, last slides | Limits and next steps. | "Old Twitter data, small urgent classes, non-commercial dataset license, human in the loop. Next: a dedicated Fireworks deployment and Microsoft Foundry, neither built yet." |
-| 9:30 | Deck, close | Show the repo and live demo URLs. | "Everything is open: github.com/vnmoorthy/rescue-radar." |
+| 8:30 | Deck, slide 9 | Limits and next steps. | "Old Twitter data, small urgent classes, non-commercial dataset license, human in the loop. Next: a dedicated Fireworks deployment and Microsoft Foundry, neither built yet." |
+| 9:00 | Deck, slide 10 (the company) | Give the 60-second company close below, word for word; leave the slide up for questions. | Ends on: "Everything is open: github.com/vnmoorthy/rescue-radar." |
+
+## 9:00 to 10:00: the company close (60 seconds)
+
+On slide 10, "Rescue Radar as a company". About 150 words; every number comes from `results/metrics.json`.
+{% set basis = "estimated" if ours.cost_measured is sameas false else "measured" %}
+
+> "Rescue Radar is a company, not just a model. Who pays: county and city emergency operations centers, 911 centers,
+> state emergency management and relief NGOs. They get the dispatch console you just saw, an API that screens posts
+> for their own tools, and, planned but not built yet, private deployment in the agency's own cloud. Pricing is an annual subscription per
+> agency, budgeted before the storm, with a usage tier for surges; the pilots will set the price. The margin is there:
+> screening a million posts costs us {{ usd(ours.cost_per_1m_usd) }}, {{ basis }}, against {{ usd(frontier.cost_per_1m_usd) }}
+> on {{ "Claude" if "Claude" in frontier_name else frontier_name }}, and {{ usd(ours.cost_per_1m_usd_undiscounted) }} even at full price. It compounds: every dispatcher decision
+> becomes a new label, and open weights give an agency a path to running it privately. We start with pilot operations centers next
+> hurricane season, then dispatch-software partners and new regions. We're asking for pilot partners, dedicated
+> Fireworks capacity and introductions to dispatch software teams. Everything is open: github.com/vnmoorthy/rescue-radar."
+
+Do not add a price, a market size, a customer or a partner name: there are none yet.
+
+## Investor questions (honest answers)
+
+**How big is the market, and who signs the check?**
+We have not sized it, and we will not quote a number we cannot defend. The buyers are emergency operations centers,
+911 centers, state emergency management and relief NGOs, which buy software from annual budgets. We have no
+customers, letters of intent or pilots yet; recruiting pilot operations centers and one relief NGO is the first job
+of the next 90 days, and those pilots will tell us what an agency will pay.
+
+**What stops a frontier lab or a dispatch-software vendor from building this?**
+The model alone is not a moat: anyone can fine-tune an open model. What we have today is a measured edge on this one
+task: on the {{ num(cmp.n) }} posts from unseen disasters that both systems answered, rescue-critical recall is
+{{ pct(sh_a.critical_recall) }} vs {{ pct(sh_b.critical_recall) }} for {{ frontier_name }}, while costing
+{{ ratio(frontier.cost_per_1m_usd, ours.cost_per_1m_usd) }} less per post. The durable parts still have to be
+built: dispatcher decisions as new labels, private deployment on open weights, and integration with the dispatch
+software agencies already run. We see dispatch-software vendors as partners rather than competitors, but no
+partnership exists yet.
+
+**Are the unit economics real, and can you sell it?**
+The cost is measured: tokens counted on every benchmark call times published prices, {{ usd(ours.cost_per_1m_usd) }}
+per million posts vs {{ usd(frontier.cost_per_1m_usd) }}. It includes a limited-time 50% Fireworks discount; at full
+price it is {{ usd(ours.cost_per_1m_usd_undiscounted) }}, still {{ ratio(frontier.cost_per_1m_usd, ours.cost_per_1m_usd_undiscounted) }}
+cheaper. Two caveats: it is slower today (median {{ ms(ours.latency_ms.p50) }} per post vs {{ ms(frontier.latency_ms.p50) }}
+on shared serverless capacity), and the dedicated deployment that fixes latency will cost more, which we have not
+measured. And the training data (HumAID) is licensed non-commercial, so a commercial product retrains on licensed or
+agency data with the same code.
 
 ## Fallback plan
 
@@ -71,7 +114,7 @@ Paste-ready posts for Head-to-Head:
 
 **How do you know it is not memorizing the disasters?**
 We split by event: trained on {{ num(train_events) }} disasters from 2016 to 2018, tested on {{ num(test_events) }}
-from 2019 the model never saw, and removed training tweets duplicated in the test events{% if d.dedup_removed is number %} ({{ num(d.dedup_removed) }} tweets){% endif %}.
+from 2019 the model never saw, and removed training tweets duplicated in the test events{% if d.dedup_removed is number %} ({{ num(d.dedup_removed) }} {{ "tweet" if d.dedup_removed == 1 else "tweets" }}){% endif %}.
 
 **Is the difference with Claude statistically real?**
 Paired on the {{ num(cmp.n) }} posts both answered: Rescue Radar right and Claude wrong on {{ num(cmp.mcnemar.a_only) }}

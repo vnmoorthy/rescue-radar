@@ -141,7 +141,7 @@ export function createTriage(root, ctx) {
     b.disabled = true;
     b.textContent = 'Queued';
     try {
-      await queue.add({ post_id: pid, text: r.redacted_text || r.text, label: r.label, event: 'triage', place: r.place || null });
+      await queue.add({ post_id: pid, text: r.redacted_text || r.text, label: r.label, event: null, place: r.place || null });
     } catch (err) {
       b.disabled = false;
       b.textContent = 'Add to queue';

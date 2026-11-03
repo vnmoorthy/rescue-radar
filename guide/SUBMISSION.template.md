@@ -30,7 +30,7 @@
 
 **Design.** Train on 15 HumAID disasters from 2016-2018; test on {{ num(m.eval.n) }} tweets sampled from 4 disasters from 2019 that are outside our fine-tuning data and every prompt (the frontier models' and the Nemotron base model's pretraining data is not public) (Hurricane Dorian, Cyclone Idai, Pakistan earthquake, Midwest floods), {{ num(m.eval.critical_support) }} of them rescue-critical. Every system gets the same instructions and label definitions (the 20-shot baselines also get 20 examples); the frontier models were scored on the tweets they answered (see limitations), and every comparison is paired on shared tweets. Protocol pre-registered at 13:49 PT before any fine-tuned score existed (`guide/PREREGISTRATION.md`). Deviations: the GPT-6.1 Terra baselines were added after pre-registration{% if headline_ablation %}, and the headline is the small-data run (pre-registered as an ablation) because the pre-registered main system is not scored yet{% endif %}.
 
-**Dataset.** HumAID (Alam et al., ICWSM 2021), human-labeled, CC BY-NC-SA 4.0. Training set: {{ num(ours_train.examples) }} tweets capped per category (from the training log, `{{ ours_train.source or "data/train.out" }}`).
+**Dataset.** HumAID (Alam et al., ICWSM 2021), human-labeled, CC BY-NC-SA 4.0. Training set: {{ num(ours_train.examples) }} tweets capped per category (from the training log, `{{ ours_train.source or "data/train.out" }}`){% if ours_train.seen is number %}; the scored step-{{ ours_train.step }} checkpoint saw {{ num(ours_train.seen) }} of them{% endif %}.
 
 | System | Tweets scored | Macro-F1 (95% CI) | Accuracy | Rescue-critical recall (95% CI) | Critical precision | Cost per 1M posts |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -59,7 +59,7 @@ Intervals come from 5,000 bootstrap resamples of tweets within each disaster; Mc
 
 ## Sponsor technology
 
-- **Fireworks:** serverless LoRA training (Training API), serverless sampling for live inference and the benchmark, and checkpoint promotion to a permanent model (`accounts/vnmoorthy/models/rescue-radar-nemotron-quick`).
+- **Fireworks:** serverless LoRA training (Training API), serverless sampling for live inference and the benchmark, and checkpoint promotion to permanent models (`accounts/vnmoorthy/models/rescue-radar-nemotron`, the headline step-275 checkpoint, and `accounts/vnmoorthy/models/rescue-radar-nemotron-quick`, the small-data ablation).
 - **NVIDIA:** Nemotron 3.5 Super (120B total, 12B active) is the base model we fine-tune; untuned Nemotron is our "before" baseline.
 - **Microsoft:** Presidio redacts personal data before review in the API and console.
 

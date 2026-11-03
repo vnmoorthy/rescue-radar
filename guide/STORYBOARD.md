@@ -17,12 +17,13 @@ benchmark has not landed yet: say "pending", never a guess.
 | Macro-F1: Rescue Radar vs Claude Opus 5.5, 20-shot, paired | 69.2% vs 63.7% (+5.5 pts, 95% CI +2.6 to +8.5 pts) |
 | Rescue-critical recall: Rescue Radar vs Claude Opus 5.5, 20-shot, paired | 85.3% vs 68.8% (+16.5 pts, 95% CI +11.2 to +21.9 pts) |
 | Accuracy: Rescue Radar vs Claude Opus 5.5, 20-shot, paired | 73.1% vs 70.9% (+2.2 pts, 95% CI +0.5 to +4.0 pts) |
-| Headline system | Rescue Radar, main run (13,839 examples) |
+| Headline system | Rescue Radar, main run (step 275 of 432: 8,800 of 13,839 examples seen) |
 | McNemar (posts only one system got right) | Rescue Radar 291, Opus 233, p = 0.013 |
 | Bootstrap resamples where Rescue Radar leads on macro-F1 | 4,997 of 5,000 |
 | Median / p95 latency per post | 3.37 s / 8.42 s vs 1.31 s / 2.71 s |
 | Cost per 1M posts | $171 vs $8,738 (ratio 51.1x) |
-| Base Nemotron, before fine-tuning (macro-F1 / critical recall) | 57.6% / 65.3% |
+| Cost per 1M posts at full Fireworks price (no limited-time discount) | $342 (ratio 25.5x) |
+| Base Nemotron, before fine-tuning (macro-F1 / critical recall) | 57.6% / 65.4% |
 
 Cost basis, read it as labelled: Rescue Radar: measured tokens x Fireworks published sampling rate for Nemotron 3.5 Super ($0.57 prefill / $1.44 sample per 1M tokens, includes a limited-time 50% discount; about 2x without it). Opus: measured tokens x Anthropic list price ($4 in / $20 out per 1M tokens, thinking tokens included).
 
@@ -49,8 +50,8 @@ then its label chip appears.
 
 **Say:**
 > "In a major disaster, 911 saturates. People who can't get through post publicly instead: the street, the water
-> level, who is trapped. But those pleas are needles in a haystack: only 8.5% of our
-> 3,001 held-out posts are rescue-critical. No team can read the rest in time."
+> level, who is trapped. But those pleas are needles in a haystack: only 3.5% of the
+> 1,485 Hurricane Dorian posts are rescue-critical. No team can read the rest in time."
 
 **Transition:** advance on "in time".
 
@@ -63,7 +64,7 @@ job-to-be-done banner.
 > "It's built for 911 dispatchers, emergency operations centers and volunteer rescue groups, with one job:
 > find every public cry for rescue, see where it is, and hand it to a team before the window closes."
 
-## 0:42 to 0:52 · Slide 4 · The product
+## 0:42 to 0:50 · Slide 4 · The product
 
 **On screen:** the console mock replays Hurricane Dorian: posts stream in, rescue-critical ones turn red, pins
 pulse on the map, the priority queue fills.
@@ -71,9 +72,10 @@ pulse on the map, the priority queue fills.
 **Say:**
 > "Here's the dispatch console. Let me show you the real thing."
 
-**Cut to live product (0:52):** switch to the browser tab with https://vnmoorthy.github.io/rescue-radar/ already open.
+**Cut to live product (0:50):** switch to the browser tab with the local console, http://localhost:8787, already open. The static
+https://vnmoorthy.github.io/rescue-radar/ tab is only the fallback: it replays recorded predictions and cannot make live model calls.
 
-## 0:52 to 1:25 · LIVE DEMO · the dispatch console
+## 0:50 to 1:18 · LIVE DEMO · the dispatch console
 
 **On screen:** the live console, not the deck.
 
@@ -89,17 +91,17 @@ is cold, so this is the recorded run of the same model" and keep going.
 
 **Transition:** back to the deck on slide 5 (press `5`, or `#5` in the URL).
 
-## 1:25 to 1:42 · Slide 5 · How it works
+## 1:18 to 1:33 · Slide 5 · How it works
 
 **On screen:** the six-step pipeline builds left to right with a red packet travelling through it; the training strip below.
 
 **Say:**
 > "Under the hood: every post is classified into the 10 HumAID humanitarian categories by NVIDIA Nemotron 3.5 Super
-> with our LoRA adapter, fine-tuned and served on Fireworks, and redacted before a dispatcher reads it. We trained on
-> 13,839 labelled posts from 15 past disasters, and the live
-> console serves the same checkpoint we scored."
+> with our LoRA adapter, fine-tuned and served on Fireworks, and redacted before a dispatcher reads it. Our training file
+> has 13,839 labelled posts from 15 past disasters; the checkpoint we
+> scored, step 275, had seen 8,800 of them, and the live console serves that same checkpoint."
 
-## 1:42 to 1:58 · Slide 6 · The benchmark design
+## 1:33 to 1:47 · Slide 6 · The benchmark design
 
 **On screen:** the 2016 to 2019 timeline draws in; the dashed "never seen in training" wall; the four 2019 test
 disasters with their post counts; tiles count up.
@@ -109,9 +111,9 @@ disasters with their post counts; tiles count up.
 > model never saw: Hurricane Dorian, Cyclone Idai, the Pakistan earthquake and the Midwest floods.
 > 3,001 held-out posts, and every system gets the same instructions; the 20-shot baselines also get 20
 > examples. Claude hit its spending cap, so we compare on the 2,592 posts both answered.
-> We pre-registered the protocol before scoring."
+> We pre-registered the protocol before any fine-tuned model was scored on the test set."
 
-## 1:58 to 2:22 · Slide 7 · Results vs Claude Opus 5.5
+## 1:47 to 2:09 · Slide 7 · Results vs Claude Opus 5.5
 
 **On screen:** the headline gaps count up; bars draw in for macro-F1, accuracy and rescue-critical recall, with 95%
 whiskers; the plain-words significance panel.
@@ -122,12 +124,12 @@ whiskers; the plain-words significance panel.
 > request, recall is 85.3% against 68.8%: ahead by +16.5 pts, and the whole 95% interval is above zero.
 > Is it luck? On the posts where only one system was right, we were right 291 times and
 > Opus 233, p = 0.013. And across 5,000 bootstrap
-> re-draws of the test set, the macro-F1 gap stays between +2.6 to +8.5 pts."
+> re-draws of the test set, the macro-F1 gap ranges from +2.6 to +8.5 pts."
 
 **Honesty rule:** read the direction exactly as the numbers show it. If an interval includes zero, say
 "we can't claim a difference on that one".
 
-## 2:22 to 2:36 · Slide 8 · Speed and cost
+## 2:09 to 2:23 · Slide 8 · Speed and cost
 
 **On screen:** latency and cost panels, each tagged MEASURED or ESTIMATED; the ratio counts up.
 
@@ -137,7 +139,7 @@ whiskers; the plain-words significance panel.
 > A dedicated deployment is the fix. And it costs $171 per million posts
 > against $8,738, from measured tokens at published prices."
 
-## 2:36 to 2:48 · Slide 9 · Sponsor stack, responsible AI, limitations
+## 2:23 to 2:36 · Slide 9 · Sponsor stack, responsible AI, limitations
 
 **On screen:** Fireworks, NVIDIA and Microsoft cards; responsible-AI list; limitations list in orange.
 
@@ -146,13 +148,20 @@ whiskers; the plain-words significance panel.
 > best effort, before any human review. Microsoft Foundry deployment is a next step, not built yet. And the limits, plainly: it still misses 15.3% of
 > rescue-critical posts and it's English-only so far, so it runs beside 911, never instead of it."
 
-## 2:48 to 3:00 · Slide 10 · The ask
+## 2:36 to 3:00 · Slide 10 · Rescue Radar as a company
 
-**On screen:** four asks, the team, the repo and demo URLs; the radar sweep returns.
+**On screen:** six cells build in (who pays, product surfaces, pricing model, why it lasts with the measured cost per
+1M posts, go-to-market, next 90 days), then the team and the ask with the repo and demo URLs.
 
-**Say:**
-> "Next: a dedicated Fireworks deployment, Microsoft Foundry for agencies, more languages and platforms, and pilot
-> partners for the next storm season. We're vnmoorthy and Seth Caldwell; the code is at https://github.com/vnmoorthy/rescue-radar and the demo is
-> live. Thank you."
+**Say (about 63 words, word for word; the slide's speaker notes carry the same script):**
+> "As a company: emergency operations centers, 911 centers and relief NGOs pay an annual subscription, plus a usage
+> tier for surges. Screening a million posts costs $171, measured, against
+> $8,738 on Claude, leaving room for strong margins, and every dispatcher decision
+> becomes training data. Go-to-market: pilots next hurricane season, then dispatch-software
+> partners and new regions. We're asking for pilot partners. Thank you."
+
+**Honesty rule:** no prices, customers, partners or market sizes: none exist yet, and the slide says the pilots set
+the price. If asked about cost: the figure includes Fireworks' limited-time 50% discount; at full price it is
+$342 per million posts. The dispatch-software partners are a plan, not signed.
 
 **Transition:** leave slide 10 up for questions.

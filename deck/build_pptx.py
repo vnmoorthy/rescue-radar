@@ -8,6 +8,11 @@ data/eval.jsonl). Anything missing renders as "n/a". Nothing is hardcoded.
 Each slide gets speaker notes, a slide transition (p:transition) and staggered fade-in entrance animations
 for its key shapes (p:timing, auto-starting with the slide).
 
+Look: the dark "Sunrise" theme from guide/THEME.md (warm near-black, sunrise amber, ember for rescue-critical), the
+thin amber sunrise streak as the motif (before every kicker and above the footer), Work Sans for type and JetBrains
+Mono for data. A PowerPoint typeface takes one name, so every run also carries a pitch-family hint: where Work Sans
+is not installed, Office falls back to Arial (Windows) or Helvetica (macOS), and Courier New for the mono face.
+
 Run:  .venv/bin/python deck/build_pptx.py [--out deck/RescueRadar.pptx]
 """
 import argparse
@@ -34,15 +39,20 @@ NA = "n/a"
 CRIT = {"requests_or_urgent_needs", "injured_or_dead_people", "missing_or_found_people"}
 REPO, SITE = "github.com/vnmoorthy/rescue-radar", "vnmoorthy.github.io/rescue-radar"
 
-# Palette mirrors the dispatch console (web/styles.css): ops-center slate, urgent red/orange, one blue accent.
-BG, PANEL, PANEL2, LINE, LINE2 = "0A1017", "111921", "151F29", "1E2A36", "2A3A4A"
-TEXT, MUTED, DIM = "E8EEF4", "A9B6C3", "6C7D8E"
-RED, RED2, ORANGE, ACCENT = "FF5A4A", "FF7D3B", "FFA83D", "4FB3D9"
-OPUS, OPUS0, BASE = "C9D3DD", "8695A7", "566679"
-CAT = {"requests_or_urgent_needs": RED, "injured_or_dead_people": RED2, "missing_or_found_people": ORANGE}
-# Safe fonts that ship with Office; the display weight comes from bold uppercase Arial.
-DISPLAY, SANS, MONO = "Arial", "Calibri", "Courier New"
+# Palette: the dark "Sunrise" tokens from guide/THEME.md (alpha tokens pre-blended over --bg / --panel).
+BG, BG_ELEV, PANEL, PANEL2, LINE, LINE2 = "11120F", "161713", "1B1C18", "23241F", "2C2D29", "3A3A36"
+TEXT, MUTED, DIM = "F4F1EA", "B8B5AB", "8C8A81"          # --text, --text-2, --text-3
+ACCENT, ACCENT2, OK = "F2A93B", "FFD27A", "7BC79A"        # sunrise amber, streak highlight, "measured"
+RED, RED2, ORANGE = "FF5B3A", "FF8A4C", "FF8A4C"          # --critical (ember) and its family
+CRIT_SOFT, CRIT_LINE, AMBER_SOFT, MOAT_LINE = "321C15", "702F20", "2C2414", "7B5F30"
+OPUS, OPUS0, BASE = "D6D2C7", "9E9C93", "6F6D66"          # calm, desaturated comparison systems
+CAT = {"requests_or_urgent_needs": "FF5B3A", "injured_or_dead_people": "FF8A4C", "missing_or_found_people": "FFB089"}
+# Work Sans (JetBrains Mono for data). Fallbacks come from the pitch-family hint set in set_font():
+# sans -> Arial / Helvetica, fixed -> Courier New. The theme's heading and body fonts are Work Sans too.
+DISPLAY = SANS = "Work Sans"
+MONO = "JetBrains Mono"
 NSP = "http://schemas.openxmlformats.org/presentationml/2006/main"
+ANS = "http://schemas.openxmlformats.org/drawingml/2006/main"
 
 
 # ------------------------------------------------------------------------------------------ formatting
@@ -58,7 +68,10 @@ def f(x):
 
 def pct(x, d=1):
     v = f(x)
-    return NA if v is None else f"{v * 100:.{d}f}%"
+    if v is None:
+        return NA
+    from decimal import Decimal, ROUND_HALF_UP  # half-up on the decimal value, same rule as the docs and the web deck
+    return f"{(Decimal(repr(v)) * 100).quantize(Decimal(1).scaleb(-d), rounding=ROUND_HALF_UP):.{d}f}%"
 
 
 def pts(x, d=1):
@@ -84,7 +97,7 @@ def pval(x):
     v = f(x)
     if v is None or v < 0:
         return NA
-    return "p < 0.001" if v < 0.001 else (f"p = {v:.3f}" if v < 0.01 else f"p = {v:.2f}")
+    return "p < 0.001" if v < 0.001 else (f"p = {v:.3f}" if v < 0.1 else f"p = {v:.2f}")
 
 
 def num(x):
@@ -163,6 +176,18 @@ def load_replay():
 
 
 HOOK_ID = "1168306378944987141"  # hand-checked: a real plea for help from Abaco during Dorian (same pin as the web deck)
+
+
+def ckpt_seen(m):
+    """(step, examples seen) of the scored headline checkpoint: checkpoint_step x batch from the training log."""
+    try:
+        key = (m.get("headline") or {}).get("ours") or "rescue_radar"
+        step = int(((m.get("systems") or {}).get(key) or {}).get("checkpoint_step"))
+        tag = "_full" if key == "rescue_radar" else ""
+        mm = re.search(r"(\d+) examples, batch (\d+)", (ROOT / "data" / f"train{tag}.out").read_text(errors="replace")[:4096])
+        return step, min(int(mm.group(1)), step * int(mm.group(2)))
+    except Exception:
+        return None, None
 
 
 def train_examples(m):
@@ -280,12 +305,24 @@ class Deck:
         self.prs.slide_width, self.prs.slide_height = Inches(13.333), Inches(7.5)
         self.layout = self.prs.slide_layouts[6]  # blank
 
-    def slide(self):
+    def slide(self, footer=True):
         s = self.prs.slides.add_slide(self.layout)
         s.background.fill.solid()
         s.background.fill.fore_color.rgb = rgb(BG)
         s._anim = []
+        streak(s, 0.75, 7.04, 11.83, name="Footer streak")
+        if footer:
+            text(s, 0.75, 7.13, 4.0, 0.2, "RESCUE RADAR", size=9, color=MUTED, bold=True, track=2.5, name="Footer wordmark")
+            text(s, 9.58, 7.13, 3.0, 0.2, "", size=9, color=DIM, font=MONO, align="r", name="Footer page")
         return s
+
+    def finish(self):
+        """Page numbers ("04 / 10") once the slide count is known."""
+        total = len(self.prs.slides)
+        for i, sl in enumerate(self.prs.slides, 1):
+            for sh in sl.shapes:
+                if sh.name == "Footer page":
+                    sh.text_frame.paragraphs[0].runs[0].text = f"{i:02d} / {total:02d}"
 
 
 def shape(s, kind, x, y, w, h, fill=None, line=None, lw=1.0, adj=None, name=None, anim=False):
@@ -333,9 +370,30 @@ def hline(s, x1, y1, x2, y2, color=LINE2, w=1.25, dash=False):
     return c
 
 
+def set_font(run, name):
+    """Typeface plus a pitch-family hint, so a machine without Work Sans / JetBrains Mono falls back to
+    Arial or Helvetica (sans) and Courier New (mono) instead of the Office default."""
+    run.font.name = name
+    latin = run._r.get_or_add_rPr().find(qn("a:latin"))
+    if latin is not None:
+        latin.set("pitchFamily", "49" if name == MONO else "34")
+        latin.set("charset", "0")
+
+
+def bulletize(p, color, indent=0.17):
+    """A real hanging bullet (buChar) so wrapped lines align with the text, not the dot."""
+    pPr = p._p.get_or_add_pPr()
+    pPr.set("marL", str(int(Inches(indent))))
+    pPr.set("indent", str(-int(Inches(indent))))
+    for xml in (f'<a:buClr xmlns:a="{ANS}"><a:srgbClr val="{color}"/></a:buClr>', f'<a:buSzPct xmlns:a="{ANS}" val="100000"/>',
+                f'<a:buFont xmlns:a="{ANS}" typeface="Arial" pitchFamily="34" charset="0"/>', f'<a:buChar xmlns:a="{ANS}" char="•"/>'):
+        pPr.append(etree.fromstring(xml))
+
+
 def text(s, x, y, w, h, content, size=16, color=TEXT, bold=False, font=SANS, align="l", anchor="t",
-         spacing=None, line_spacing=None, anim=False, name=None):
-    """content: str (\n = new paragraph) or list of paragraphs, each a str or list of (text, opts) runs."""
+         spacing=None, line_spacing=None, anim=False, name=None, track=None, bullet=None):
+    """content: str (\n = new paragraph) or list of paragraphs, each a str or list of (text, opts) runs.
+    track: letter spacing in points (wordmark, eyebrows). bullet: color of a hanging bullet on every paragraph."""
     tb = s.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
     tf = tb.text_frame
     tf.word_wrap = True
@@ -355,8 +413,12 @@ def text(s, x, y, w, h, content, size=16, color=TEXT, bold=False, font=SANS, ali
             r.text = txt
             r.font.size = Pt(o.get("size", size))
             r.font.bold = o.get("bold", bold)
-            r.font.name = o.get("font", font)
+            set_font(r, o.get("font", font))
             r.font.color.rgb = rgb(o.get("color", color))
+            if o.get("track", track):
+                r._r.get_or_add_rPr().set("spc", str(int(o.get("track", track) * 100)))
+        if bullet:
+            bulletize(p, bullet)
     if name:
         tb.name = name
     if anim:
@@ -364,16 +426,36 @@ def text(s, x, y, w, h, content, size=16, color=TEXT, bold=False, font=SANS, ali
     return tb
 
 
+def streak(s, x, y, w, h=0.02, glow=0.7, name="Sunrise streak"):
+    """The Sunrise motif: a thin line, transparent -> amber -> pale gold -> amber -> transparent, at 70% opacity."""
+    sh = rect(s, x, y, w, h, name=name)
+    a = int(glow * 100000)
+    gs = "".join(f'<a:gs pos="{p}"><a:srgbClr val="{c}"><a:alpha val="{al}"/></a:srgbClr></a:gs>' for p, c, al in
+                 ((0, ACCENT, 0), (30000, ACCENT, a), (50000, ACCENT2, a), (70000, ACCENT, a), (100000, ACCENT, 0)))
+    grad = etree.fromstring(f'<a:gradFill xmlns:a="{ANS}" rotWithShape="1"><a:gsLst>{gs}</a:gsLst>'
+                            '<a:lin ang="0" scaled="0"/></a:gradFill>')
+    nf = sh._element.spPr.find(qn("a:noFill"))
+    nf.addprevious(grad)
+    nf.getparent().remove(nf)
+    return sh
+
+
+def eyebrow(s, x, y, label, w=10.0):
+    """Section eyebrow as in the web deck: a short streak, then tracked uppercase amber."""
+    streak(s, x, y + 0.115, 0.4, name="Eyebrow streak")
+    text(s, x + 0.55, y, w, 0.3, label.upper(), size=12, color=ACCENT, bold=True, track=1.7)
+
+
 def header(s, n, kicker, title, accent=None, size=36):
-    text(s, 0.75, 0.5, 10, 0.3, f"{n:02d}  ·  {kicker.upper()}", size=12, color=ACCENT, font=MONO, bold=True)
+    eyebrow(s, 0.75, 0.5, f"{n:02d}  ·  {kicker}")
     lines = []
-    for ln in title.upper().split("\n"):
-        if accent and accent.upper() in ln:
-            a, b = ln.split(accent.upper(), 1)
-            lines.append([(a, {}), (accent.upper(), {"color": RED}), (b, {})])
+    for ln in title.split("\n"):
+        if accent and accent in ln:
+            a, b = ln.split(accent, 1)
+            lines.append([(a, {}), (accent, {"color": ACCENT}), (b, {})])
         else:
             lines.append(ln)
-    text(s, 0.75, 0.8, 11.8, 1.3, lines, size=size, bold=True, font=DISPLAY, line_spacing=0.95, name="Title")
+    text(s, 0.75, 0.88, 11.8, 1.3, lines, size=size, font=DISPLAY, line_spacing=0.95, name="Title")
 
 
 def chip(s, x, y, label, size=9):
@@ -387,10 +469,10 @@ def chip(s, x, y, label, size=9):
 
 def radar(s, cx, cy, rmax, seed):
     for i in range(1, 6):
-        oval(s, cx, cy, rmax * i / 5, line="1C3442", lw=1.0)
-    hline(s, cx - rmax, cy, cx + rmax, cy, color="1C3442", w=0.75)
-    hline(s, cx, cy - rmax, cx, cy + rmax, color="1C3442", w=0.75)
-    sweep = shape(s, MSO_SHAPE.PIE, cx - rmax, cy - rmax, 2 * rmax, 2 * rmax, fill="12303E", name="Radar sweep")
+        oval(s, cx, cy, rmax * i / 5, line=LINE, lw=1.0)
+    hline(s, cx - rmax, cy, cx + rmax, cy, color=LINE, w=0.75)
+    hline(s, cx, cy - rmax, cx, cy + rmax, color=LINE, w=0.75)
+    sweep = shape(s, MSO_SHAPE.PIE, cx - rmax, cy - rmax, 2 * rmax, 2 * rmax, fill=AMBER_SOFT, name="Radar sweep")
     try:
         sweep.adjustments[0], sweep.adjustments[1] = 200.0, 250.0
     except Exception:
@@ -400,7 +482,7 @@ def radar(s, cx, cy, rmax, seed):
         a, rr = rnd.random() * 2 * math.pi, 0.15 + rnd.random() * 0.8
         crit = i < 4
         oval(s, cx + math.cos(a) * rr * rmax, cy + math.sin(a) * rr * rmax, 0.07 if crit else 0.045,
-             fill=RED if crit else ACCENT, anim=crit)
+             fill=RED if crit else DIM, anim=crit)
 
 
 # ------------------------------------------------------------------------------------ transitions, anim
@@ -449,6 +531,33 @@ def notes(slide, txt):
     slide.notes_slide.notes_text_frame.text = txt
 
 
+def apply_theme(prs):
+    """Work Sans and the Sunrise accents in the deck theme, so text and shapes added later in PowerPoint match."""
+    from pptx.opc.constants import RELATIONSHIP_TYPE as RT
+    part = prs.slide_masters[0].part.part_related_by(RT.THEME)
+    root = etree.fromstring(part.blob)
+    ns = {"a": ANS}
+    for latin in root.findall(".//a:majorFont/a:latin", ns) + root.findall(".//a:minorFont/a:latin", ns):
+        latin.attrib.pop("panose", None)
+        latin.set("typeface", SANS)
+        latin.set("pitchFamily", "34")
+        latin.set("charset", "0")
+    scheme = root.find(".//a:clrScheme", ns)
+    if scheme is not None:
+        scheme.set("name", "Rescue Radar Sunrise")
+        for tag_, val in (("accent1", ACCENT), ("accent2", RED), ("accent3", OK), ("accent4", "8FB4D8"),
+                          ("accent5", "A9A5D6"), ("accent6", "C79FBF"), ("hlink", ACCENT), ("folHlink", ACCENT2)):
+            el = scheme.find(f"a:{tag_}", ns)
+            if el is not None:
+                for c in list(el):
+                    el.remove(c)
+                etree.SubElement(el, qn("a:srgbClr")).set("val", val)
+    fonts = root.find(".//a:fontScheme", ns)
+    if fonts is not None:
+        fonts.set("name", "Rescue Radar Sunrise")
+    part._blob = etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
+
+
 # ---------------------------------------------------------------------------------------------- slides
 def build(D, out):
     deck = Deck()
@@ -456,10 +565,10 @@ def build(D, out):
     fname = D.front_name
 
     # 1 ---------------------------------------------------------------- title + hook
-    s = deck.slide()
+    s = deck.slide(footer=False)
     radar(s, 10.55, 3.75, 2.75, 7)
-    text(s, 0.75, 0.75, 7, 0.3, "FIREWORKS: DEPLOY  ·  SAN FRANCISCO", size=12, color=ACCENT, font=MONO, bold=True)
-    text(s, 0.75, 1.1, 7.2, 2.4, [[("RESCUE", {})], [("RADAR", {"color": RED})]], size=80, bold=True, font=DISPLAY,
+    eyebrow(s, 0.75, 0.75, "Fireworks: Deploy  ·  San Francisco", w=7.0)
+    text(s, 0.75, 1.1, 7.2, 2.4, [[("Rescue", {})], [("Radar", {"color": ACCENT})]], size=80, font=DISPLAY,
          line_spacing=0.9, anim=True, name="Title")
     text(s, 0.75, 3.45, 6.9, 1.0, "Reads every public post during a disaster, finds the people asking to be rescued, "
          "and puts them in a dispatcher's queue in real time.", size=18, color=MUTED, anim=True)
@@ -472,10 +581,10 @@ def build(D, out):
         hook_txt, lab, who = "A real public post from Hurricane Dorian (2019) appears here once the replay data is exported.", None, ""
     text(s, 1.0, 4.82, 6.4, 0.25, "HURRICANE DORIAN · 2019 · PUBLIC POST · PII SCRUBBED", size=10,
          color=DIM, font=MONO, bold=True, anim=True)
-    text(s, 1.0, 5.12, 6.4, 1.0, hook_txt, size=15, color=TEXT, anim=True)
+    text(s, 1.0, 5.1, 6.4, 1.0, hook_txt, size=13.5, color=TEXT, anim=True)
     if lab:
-        text(s, 1.0, 6.2, 1.7, 0.24, who, size=10, color=DIM, font=MONO)
-        chip(s, 2.6, 6.17, lab)
+        text(s, 1.0, 6.26, 1.7, 0.24, who, size=10, color=DIM, font=MONO)
+        chip(s, 2.6, 6.23, lab)
     hook_say = ("This was posted publicly during Hurricane Dorian in 2019: someone in Abaco lost contact with a friend, and a "
                 "cousin's church shelter had its roof ripped off, with people stuck by flooding. They asked strangers online for help. "
                 if D.hook and str(D.hook.get("id")) == HOOK_ID else
@@ -496,12 +605,12 @@ def build(D, out):
         text(s, 0.75, y, 0.9, 0.7, n_, size=34, bold=True, font=DISPLAY, color=RED if i == 2 else DIM, anim=True)
         text(s, 1.65, y, 5.9, 1.3, [[(h, {"size": 20, "bold": True, "color": TEXT})], [(b, {"size": 15, "color": MUTED})]],
              spacing=4, anim=True)
-    card(s, 7.9, 2.3, 4.7, 4.4, fill="0D141B", line=LINE)
+    card(s, 7.9, 2.3, 4.7, 4.4, fill=BG_ELEV, line=LINE)
     for i, p in enumerate(D.posts[:9]):
         crit_ = p.get("truth") in CRIT
         t = scrub(p["text"])
         text(s, 8.1, 2.45 + i * 0.27, 4.3, 0.25, (t[:48] + "…") if len(t) > 48 else t, size=9,
-             color="FF9C90" if crit_ else "52657A", font=MONO)
+             color=RED2 if crit_ else BASE, font=MONO)
     if not D.posts:
         text(s, 8.1, 2.5, 4.3, 0.5, "Replay data pending.", size=12, color=DIM, font=MONO)
     text(s, 8.15, 5.05, 2.2, 0.75, num(D.dorian_n), size=40, bold=True, font=DISPLAY, anim=True)
@@ -524,12 +633,12 @@ def build(D, out):
     for i, (h, b) in enumerate(who):
         x = 0.75 + i * 4.0
         card(s, x, 2.35, 3.75, 2.55, anim=True)
-        oval(s, x + 0.55, 2.9, 0.28, fill="16303F")
+        oval(s, x + 0.55, 2.9, 0.28, fill=AMBER_SOFT)
         text(s, x + 0.27, 2.74, 0.56, 0.32, str(i + 1), size=16, bold=True, font=DISPLAY, color=ACCENT, align="c")
         text(s, x + 0.3, 3.35, 3.2, 1.5, [[(h, {"size": 19, "bold": True})], [(b, {"size": 14, "color": MUTED})]],
              spacing=6, anim=True)
-    card(s, 0.75, 5.2, 11.75, 1.35, fill="2A1416", line="6E2B26", anim=True)
-    text(s, 1.05, 5.4, 2.0, 0.9, "JOB TO BE DONE", size=12, color="FF9B9B", font=MONO, bold=True, anim=True)
+    card(s, 0.75, 5.2, 11.75, 1.35, fill=CRIT_SOFT, line=CRIT_LINE, anim=True)
+    text(s, 1.05, 5.4, 2.0, 0.9, "JOB TO BE DONE", size=12, color="FFB089", bold=True, track=1.5, anim=True)
     text(s, 3.1, 5.38, 9.1, 1.0, "When a disaster swamps our lines, help me find every public cry for rescue, see where it is, "
          "and hand it to a team before the window closes.", size=18, color=TEXT, anim=True)
     notes(s, "Three users: 911 dispatchers who need overflow triage, emergency operations centers building a common picture, "
@@ -541,8 +650,8 @@ def build(D, out):
     # 4 ---------------------------------------------------------------- product
     s = deck.slide()
     header(s, 4, "The product", "A dispatch console that reads every post", size=32)
-    card(s, 0.75, 1.65, 11.85, 5.15, fill="0B131B", line=LINE2, adj=0.02, anim=True)
-    rect(s, 0.76, 1.66, 11.83, 0.42, fill="0E1822")
+    card(s, 0.75, 1.65, 11.85, 5.15, fill=BG_ELEV, line=LINE2, adj=0.02, anim=True)
+    rect(s, 0.76, 1.66, 11.83, 0.42, fill=PANEL)
     src = "labels: Rescue Radar predictions" if D.src == "ours" else "labels: human annotations (model predictions pending)"
     text(s, 0.95, 1.77, 11.4, 0.25, [[("● REPLAY   ", {"color": RED, "bold": True}), ("Hurricane Dorian 2019   ", {"color": TEXT, "bold": True}),
                                       (src, {"color": MUTED}), ("      " + SITE, {"color": DIM})]], size=10, font=MONO)
@@ -550,14 +659,14 @@ def build(D, out):
     text(s, 0.95, 2.2, 3.4, 0.25, "INCOMING POSTS", size=9, color=DIM, font=MONO, bold=True)
     for i, p in enumerate(D.posts[6:10]):
         y = 2.5 + i * 1.06
-        card(s, 0.9, y, 3.55, 0.96, fill="111C26", line="1B2936", adj=0.08)
+        card(s, 0.9, y, 3.55, 0.96, fill=PANEL, line=LINE, adj=0.08)
         t = scrub(p["text"])
-        text(s, 1.02, y + 0.07, 3.3, 0.55, (t[:92] + "…") if len(t) > 92 else t, size=9.5, color="D4DDE6")
+        text(s, 1.02, y + 0.07, 3.3, 0.55, (t[:92] + "…") if len(t) > 92 else t, size=9.5, color=TEXT)
         if lab_of(p):
             chip(s, 1.02, y + 0.66, lab_of(p), size=7.5)
     # map pane: equirectangular projection around the event center
     mx, my, mw, mh = 4.6, 2.15, 4.25, 4.55
-    rect(s, mx, my, mw, mh, fill="0B131B", line=LINE)
+    rect(s, mx, my, mw, mh, fill=BG, line=LINE)
     placed = [p for p in D.posts if isinstance(p.get("place"), dict) and f(p["place"].get("lat")) is not None]
     if placed:
         c = g(D.event, "center") or [sorted(p["place"]["lat"] for p in placed)[len(placed) // 2],
@@ -585,28 +694,29 @@ def build(D, out):
                 oval(s, x, y, rr, fill=CAT.get(lab, RED), anim=True)
                 if labeled < 4 and name:
                     text(s, x + rr + 0.06, y - 0.09, 1.9, 0.2, f"{name}" + (f" · {n_crit}" if n_crit > 1 else ""),
-                         size=8, color="C9D4DF", font=MONO)
+                         size=8, color=OPUS, font=MONO)
                     labeled += 1
             else:
-                oval(s, x, y, 0.035, fill="4B5D71")
+                oval(s, x, y, 0.035, fill=BASE)
     else:
         text(s, mx + 0.3, my + mh / 2 - 0.2, mw - 0.6, 0.4, "Replay data pending: rescue pins render here", size=11,
              color=DIM, font=MONO, align="c")
-    text(s, mx + 0.12, my + mh - 0.3, mw - 0.2, 0.22, "red: rescue-critical places · grey: other located posts", size=8,
+    text(s, mx + 0.12, my + mh - 0.3, mw - 0.2, 0.22, "ember: rescue-critical places · grey: other located posts", size=8,
          color=DIM, font=MONO)
     text(s, 9.0, 2.2, 3.4, 0.25, "PRIORITY QUEUE", size=9, color=DIM, font=MONO, bold=True)
     for i, p in enumerate([p for p in D.posts if lab_of(p) in CRIT][:4]):
         y = 2.5 + i * 1.06
-        card(s, 9.0, y, 3.45, 0.96, fill="141D27", line="6E2B26", adj=0.08, anim=True)
+        card(s, 9.0, y, 3.45, 0.96, fill=CRIT_SOFT, line=CRIT_LINE, adj=0.08, anim=True)
         text(s, 9.1, y + 0.08, 0.3, 0.4, str(i + 1), size=18, bold=True, font=DISPLAY, color=RED)
         t = scrub(p["text"])
-        text(s, 9.45, y + 0.07, 2.9, 0.55, (t[:80] + "…") if len(t) > 80 else t, size=9.5, color="D4DDE6")
+        text(s, 9.45, y + 0.07, 2.9, 0.55, (t[:80] + "…") if len(t) > 80 else t, size=9.5, color=TEXT)
         chip(s, 9.45, y + 0.66, lab_of(p), size=7.5)
     notes(s, "This is the dispatch console, replaying Hurricane Dorian. Posts stream in on the left, each one classified. "
              "Rescue-critical posts turn red, get a pin on the map, and jump into the priority queue on the right, "
              "with names, phone numbers and handles already redacted.\n"
-             f"CUT TO LIVE DEMO here: {SITE}. Start the Dorian replay, then paste a fresh post into Compare to show "
-             "Rescue Radar and Claude Opus 5.5 labelling it side by side.\n"
+             f"CUT TO LIVE DEMO here: the local console, http://localhost:8787 (live model calls work only there). Start the Dorian "
+             "replay, then paste a fresh post into Head-to-Head to show Rescue Radar and the frontier model labelling it side by side. "
+             f"Fallback if the local server is down: the static {SITE} tab and Head-to-Head's recorded race ('Run 20 random test posts').\n"
              "Transition back to the deck: push up.")
     add_transition_and_timing(s, "push")
 
@@ -620,7 +730,7 @@ def build(D, out):
     for i, (h, b) in enumerate(nodes):
         x = 0.75 + i * 2.0
         hot, human = i == 2, i == 5
-        oval(s, x + 0.45, 2.85, 0.42, fill="16303F" if hot else PANEL, line=ACCENT if hot else (RED if human else LINE2),
+        oval(s, x + 0.45, 2.85, 0.42, fill=AMBER_SOFT if hot else PANEL, line=ACCENT if hot else (RED if human else LINE2),
              lw=1.5, anim=True)
         text(s, x + 0.03, 2.66, 0.84, 0.4, str(i + 1), size=18, bold=True, font=DISPLAY,
              color=ACCENT if hot else (RED if human else MUTED), align="c")
@@ -628,7 +738,8 @@ def build(D, out):
              anim=True)
     card(s, 0.75, 4.95, 11.85, 1.75, fill=PANEL, line=LINE, anim=True)
     steps = [("TRAIN DATA", f"{num(D.ev.get('train_events'))} disasters", "HumAID, 2016 to 2018; look-alikes of test posts removed"),
-             ("EXAMPLES", f"{num(train_examples(D.m))} posts", "Capped per class so rare rescue categories count"),
+             ("EXAMPLES", f"{num(train_examples(D.m))} posts", (f"Capped per class; the scored step-{ckpt_seen(D.m)[0]} checkpoint saw {num(ckpt_seen(D.m)[1])}"
+              if ckpt_seen(D.m)[1] else "Capped per class so rare rescue categories count")),
              ("FINE-TUNE", "LoRA on Fireworks", "Serverless training on the open NVIDIA Nemotron 3.5 Super base"),
              ("SERVE", "Same code path", "Fireworks serverless sampling; the live server serves the scored checkpoint")]
     for i, (k, v, d_) in enumerate(steps):
@@ -639,7 +750,7 @@ def build(D, out):
     notes(s, "Under the hood: posts are PII-scrubbed, then classified into the 10 HumAID humanitarian categories by "
              "NVIDIA Nemotron 3.5 Super with our LoRA adapter, trained and served on Fireworks.\n"
              f"Training data: {num(D.ev.get('train_events'))} disasters from 2016 to 2018, "
-             f"{num(train_examples(D.m))} labelled posts. The same SamplerClassifier code path serves the demo and the benchmark, "
+             f"{num(train_examples(D.m))} labelled posts in the training file" + (f"; the scored step-{ckpt_seen(D.m)[0]} checkpoint saw {num(ckpt_seen(D.m)[1])} of them" if ckpt_seen(D.m)[1] else "") + ". The same SamplerClassifier code path serves the demo and the benchmark, "
              "and by default the live server serves exactly the checkpoint the benchmark scored (the console badge says 'scored'). "
              "A human always makes the dispatch call.\n"
              "Transition: fade.")
@@ -664,7 +775,7 @@ def build(D, out):
         text(s, cx - 1.25, 3.15, 2.5, 1.7, "\n".join(evs), size=10.5, color=MUTED, font=MONO, align="c", spacing=2, anim=True)
     oval(s, 10.85, 2.45, 0.1, fill=BG, line=ORANGE, lw=2.5)
     text(s, 9.65, 2.62, 2.4, 0.5, "2019", size=26, bold=True, font=DISPLAY, color=ORANGE, align="c", anim=True)
-    text(s, 9.35, 3.15, 3.3, 1.7, [[(name + "  ", {"color": "FFD0A6"}), (f"{num(g(D.ev, 'events', k))} posts", {"color": TEXT, "bold": True})]
+    text(s, 9.35, 3.15, 3.3, 1.7, [[(name + "  ", {"color": "FFB089"}), (f"{num(g(D.ev, 'events', k))} posts", {"color": TEXT, "bold": True})]
                                   for k, name in test], size=10.5, font=MONO, spacing=2, anim=True)
     tiles = [(num(D.ev.get("train_events")), "training disasters, 2016 to 2018", TEXT),
              (num(D.ev.get("test_events")), "unseen 2019 disasters held out", ORANGE),
@@ -685,7 +796,7 @@ def build(D, out):
              f"the Pakistan earthquake and the Midwest floods. {num(D.ev.get('n'))} held-out posts. Every system gets the same "
              "instructions and 10 labels; the 20-shot baselines also get 20 examples. Claude hit its API spending cap, so it answered "
              "fewer posts and every comparison is paired on the posts both systems answered. The protocol was pre-registered "
-             "before scoring." + (" Deviation: the headline is the small-data run, which the pre-registration lists as an ablation; "
+             "before any fine-tuned model was scored on the test set." + (" Deviation: the headline is the small-data run, which the pre-registration lists as an ablation; "
              "the pre-registered main system is not scored yet." if D.ours_key == "rescue_radar_quick" else "") + "\n"
              "Transition: push up.")
     add_transition_and_timing(s, "push")
@@ -713,7 +824,7 @@ def build(D, out):
             rows.append((short, sd or {}, OPUS if key == D.front_key else (OPUS0 if key.startswith("opus") else BASE)))
     metrics = [("Macro-F1", lambda x: x.get("macro_f1"), lambda x: g(x, "ci95", "macro_f1"), TEXT),
                ("Accuracy", lambda x: x.get("accuracy"), lambda x: g(x, "ci95", "accuracy"), TEXT),
-               ("Rescue-critical recall", lambda x: g(x, "critical", "recall"), lambda x: g(x, "ci95", "critical_recall"), "FF8F8F")]
+               ("Rescue-critical recall", lambda x: g(x, "critical", "recall"), lambda x: g(x, "ci95", "critical_recall"), RED2)]
     bx, bw, y = 6.35, 4.1, 2.15
     for title_, get_v, get_ci, col in metrics:
         text(s, 4.6, y, 4.0, 0.3, title_, size=14, bold=True, color=col)
@@ -721,15 +832,15 @@ def build(D, out):
         for short, sd, color in rows:
             v, ci = f(get_v(sd)), get_ci(sd)
             text(s, 4.6, y + 0.01, 1.7, 0.22, short, size=9.5, font=MONO, color=ACCENT if color == ACCENT else MUTED)
-            rect(s, bx, y + 0.04, bw, 0.16, fill="141E28")
+            rect(s, bx, y + 0.04, bw, 0.16, fill=PANEL2)
             if v is not None:
                 rect(s, bx, y + 0.04, max(0.02, bw * max(0, min(1, v))), 0.16, fill=color, anim=True)
             if isinstance(ci, list) and len(ci) == 2 and f(ci[0]) is not None and f(ci[1]) is not None:
                 x1, x2 = bx + bw * ci[0], bx + bw * ci[1]
-                hline(s, x1, y + 0.12, x2, y + 0.12, color="FFFFFF", w=1.0)
-                hline(s, x1, y + 0.02, x1, y + 0.22, color="FFFFFF", w=1.0)
-                hline(s, x2, y + 0.02, x2, y + 0.22, color="FFFFFF", w=1.0)
-            ci_txt = f"  {ci[0] * 100:.1f}–{ci[1] * 100:.1f}" if isinstance(ci, list) and len(ci) == 2 and None not in (f(ci[0]), f(ci[1])) else ""
+                hline(s, x1, y + 0.12, x2, y + 0.12, color=TEXT, w=1.0)
+                hline(s, x1, y + 0.02, x1, y + 0.22, color=TEXT, w=1.0)
+                hline(s, x2, y + 0.02, x2, y + 0.22, color=TEXT, w=1.0)
+            ci_txt = f"  {pct(ci[0])[:-1]}–{pct(ci[1])[:-1]}" if isinstance(ci, list) and len(ci) == 2 and None not in (f(ci[0]), f(ci[1])) else ""
             text(s, bx + bw + 0.12, y, 1.9, 0.22, [[(pct(v), {"bold": True, "color": TEXT if v is not None else DIM}),
                                                   (ci_txt, {"size": 8, "color": DIM})]], size=10, font=MONO)
             y += 0.27
@@ -791,7 +902,7 @@ def build(D, out):
     def panel(x, title_, tg, r, cap_good, cap_bad, items, fmt, note):
         card(s, x, 2.3, 5.75, 4.4, anim=True)
         text(s, x + 0.3, 2.5, 3.8, 0.4, title_, size=20, bold=True)
-        tc = ACCENT if tg == "MEASURED" else (ORANGE if tg == "ESTIMATED" else DIM)
+        tc = OK if tg == "MEASURED" else (ORANGE if tg == "ESTIMATED" else DIM)
         card(s, x + 4.2, 2.52, 1.3, 0.3, fill=PANEL2, line=tc, adj=0.15, lw=0.75)
         text(s, x + 4.2, 2.57, 1.3, 0.22, tg, size=9, bold=True, font=MONO, color=tc, align="c")
         if r is None:
@@ -806,7 +917,7 @@ def build(D, out):
         for i, (lbl, v, color) in enumerate(items):
             yy = 4.45 + i * 0.36
             text(s, x + 0.3, yy, 1.9, 0.25, lbl, size=10, font=MONO, color=ACCENT if color == ACCENT else MUTED)
-            rect(s, x + 2.15, yy + 0.05, 2.3, 0.16, fill="141E28")
+            rect(s, x + 2.15, yy + 0.05, 2.3, 0.16, fill=PANEL2)
             if f(v) is not None:
                 rect(s, x + 2.15, yy + 0.05, max(0.02, 2.3 * f(v) / vmax), 0.16, fill=color, anim=True)
             text(s, x + 4.55, yy, 1.1, 0.25, fmt(v), size=10, bold=True, font=MONO, color=TEXT if f(v) is not None else DIM)
@@ -828,7 +939,7 @@ def build(D, out):
         cnote += f" Rescue Radar undiscounted: {usd(o['cost_per_1m_usd_undiscounted'])} per 1M posts."
     panel(6.85, "Cost per 1M posts", tag(o) if o.get("cost_per_1m_usd") is not None else "PENDING", cost_r,
           f"cheaper per million posts than {fname}", f"more expensive per million posts than {fname}",
-          [("Rescue Radar", o.get("cost_per_1m_usd"), ACCENT), (fshort, fr.get("cost_per_1m_usd"), OPUS)], usd, cnote[:330])
+          [("Rescue Radar", o.get("cost_per_1m_usd"), ACCENT), (fshort, fr.get("cost_per_1m_usd"), OPUS)], usd, cnote if len(cnote) <= 480 else cnote[:477].rsplit(" ", 1)[0] + "…")
     notes(s, f"Speed: median latency per post is {ms(g(o, 'latency_ms', 'p50'))} for Rescue Radar versus "
              f"{ms(g(fr, 'latency_ms', 'p50'))} for {fname}; p95 {ms(g(o, 'latency_ms', 'p95'))} versus {ms(g(fr, 'latency_ms', 'p95'))}. "
              "Measured on every benchmark call.\n"
@@ -873,27 +984,102 @@ def build(D, out):
              "Transition: fade.")
     add_transition_and_timing(s, "fade")
 
-    # 10 --------------------------------------------------------------- ask / close
+    # 10 --------------------------------------------------------------- the company, the ask, the close
+    # Mirrors slide 10 of docs/deck/index.html. Qualitative company story; the only numbers are measured costs
+    # from results/metrics.json. No prices, customers, partners or market sizes are claimed.
     s = deck.slide()
-    radar(s, 10.9, 3.9, 2.9, 11)
-    header(s, 10, "What's next", "Put it in front\nof real dispatchers")
-    asks = [("Dedicated Fireworks deployment", "Reserved capacity for steady low latency during a surge."),
-            ("Microsoft Foundry for agencies", "Deploy inside the cloud tenancy public agencies already use."),
-            ("More languages and platforms", "Spanish, Hindi, Urdu, French; beyond X to other public channels."),
-            ("Pilot partners", "One emergency operations center and one NGO for the next storm season.")]
-    for i, (h, b) in enumerate(asks):
-        y = 2.35 + i * 0.85
-        text(s, 0.75, y, 0.7, 0.6, f"{i + 1:02d}", size=26, bold=True, font=DISPLAY, color=ACCENT, anim=True)
-        text(s, 1.5, y, 6.2, 0.8, [[(h, {"size": 17, "bold": True})], [(b, {"size": 13, "color": MUTED})]], spacing=2, anim=True)
-    text(s, 0.75, 5.95, 4.5, 0.8, [[("TEAM", {"font": MONO, "size": 10, "color": DIM, "bold": True})],
-                                   [("VNMOORTHY & SETH CALDWELL", {"font": DISPLAY, "size": 18, "bold": True})]], spacing=4, anim=True)
-    text(s, 5.4, 5.95, 4.6, 0.8, [[("repo  ", {"color": ACCENT}), (REPO, {})], [("demo  ", {"color": ACCENT}), (SITE, {})]],
-         size=12, font=MONO, spacing=4, anim=True)
-    notes(s, "What's next: a dedicated Fireworks deployment for steady latency during a surge, Microsoft Foundry so agencies "
-             "can run it in their own tenancy, more languages and platforms, and pilot partners for the next storm season.\n"
-             f"We are vnmoorthy and Seth Caldwell. The code is at {REPO} and the live demo is at {SITE}. Thank you.\n"
+    header(s, 10, "The company", "Rescue Radar as a company", size=32)
+    o_cost, f_cost = f(o.get("cost_per_1m_usd")), f(fr.get("cost_per_1m_usd"))
+    o_full = f(o.get("cost_per_1m_usd_undiscounted"))
+    basis = tag(o).lower() if o_cost is not None else "pending"
+    cost_x = ratio(fr.get("cost_per_1m_usd"), o.get("cost_per_1m_usd"))
+    fbrand = fname.split(",")[0]  # "Claude Opus 5.5, 20-shot" -> "Claude Opus 5.5"
+    fsay = "Claude" if "Claude" in fname else fbrand
+    GW, GAP, RH, TOP = 3.84, 0.155, 1.82, 1.62
+
+    def cell(col, y, h, title_, w=GW, x=None, line=LINE):
+        x = 0.75 + col * (GW + GAP) if x is None else x
+        card(s, x, y, w, h, fill=PANEL, line=line, adj=0.05, anim=True)
+        text(s, x + 0.22, y + 0.17, w - 0.44, 0.22, title_.upper(), size=9.5, color=ACCENT, bold=True, track=1.3)
+        return x
+
+    def items(x, y, rows, w=GW - 0.44, h=1.3, size=10.5):
+        """rows: (bold lead, rest, dim). Real hanging bullets, calm grey dots as in the web deck."""
+        paras = [([(lead, {"bold": True, "color": DIM if dim else TEXT})] if lead else []) +
+                 ([(rest, {"color": DIM if dim else MUTED})] if rest else []) for lead, rest, dim in rows]
+        text(s, x, y, w, h, paras, size=size, spacing=3.5, bullet=BASE)
+
+    r1, r2 = TOP, TOP + RH + GAP
+    x = cell(0, r1, RH, "Who pays")
+    items(x + 0.22, r1 + 0.5, [("County and city emergency operations centers", "", False),
+                               ("911 centers", " and state emergency management", False),
+                               ("Humanitarian organizations", " that run response operations", False),
+                               ("Dispatch-software vendors", " that embed the API", False)])
+    x = cell(1, r1, RH, "Product surfaces")
+    items(x + 0.22, r1 + 0.5, [("Dispatch console: ", "live feed, map and priority queue", False),
+                               ("API ", "that screens posts for an agency's own tools", False),
+                               ("Private deployment ", "in the agency's own cloud: planned, not built", False)])
+    x = cell(2, r1, RH, "Pricing model")
+    items(x + 0.22, r1 + 0.5, [("Annual subscription per agency, ", "budgeted before the storm", False),
+                               ("Usage tier ", "for high-volume screening in a surge", False),
+                               ("", "No price list yet: the pilots will set it", False)])
+    x = cell(0, r2, RH, "Why it lasts", line=MOAT_LINE)
+    text(s, x + 0.22, r2 + 0.44, 1.1, 0.42, usd(o_cost), size=22, font=MONO, color=TEXT if o_cost is not None else DIM,
+         anim=True, name="Unit cost")
+    text(s, x + 1.22, r2 + 0.45, GW - 1.4, 0.42,
+         [[(f"per 1M posts, {basis}", {"color": MUTED})],
+          [(f"{fbrand}: {usd(f_cost)}" + (f" ({cost_x:.0f}× more)" if cost_x else ""), {"color": DIM})]],
+         size=8.5, spacing=1)
+    items(x + 0.22, r2 + 0.92, [("Margin: ", (f"{usd(o_full)} per 1M even at full price" if o_full is not None
+                                              else "screening every post is affordable"), False),
+                                ("Data moat: ", "dispatcher actions become labels", False),
+                                ("Open weights: ", "a path to running it privately", False)], h=0.82, size=10)
+    x = cell(1, r2, RH, "Go-to-market")
+    items(x + 0.22, r2 + 0.5, [("Pilots ", "with emergency operations centers: replay a past disaster, then shadow mode", False),
+                               ("Expand ", "by region and language", False),
+                               ("Partnerships with dispatch-software vendors ", "to reach agencies on their systems", False)])
+    x = cell(2, r2, RH, "Next 90 days")
+    items(x + 0.22, r2 + 0.5, [("", "Recruit pilot EOCs and one relief NGO", False),
+                               ("", "Dedicated Fireworks deployment for surge latency", False),
+                               ("", "Export the LoRA adapter for private deployment", False),
+                               ("", "Multilingual evaluation", False)])
+    r3 = r2 + RH + GAP
+    fh = 6.94 - r3
+    x = cell(0, r3, fh, "Team", w=5.45)
+    text(s, x + 0.22, r3 + 0.45, 5.0, 0.4, [[("NarasingaMoorthy VeiluKanthaPerumal", {"bold": True}),
+                                            ("  @vnmoorthy", {"font": MONO, "size": 9, "color": DIM})],
+                                           [("TMLR papers on LLM downshifting and PAVO voice routing", {"size": 9.5, "color": MUTED})]],
+         size=11, spacing=1)
+    text(s, x + 0.22, r3 + 0.86, 5.0, 0.4, [[("Seth Caldwell", {"bold": True})],
+                                           [("masky.ai", {"size": 9.5, "color": MUTED})]], size=11, spacing=1)
+    x = cell(0, r3, fh, "The ask", w=GW * 3 + GAP * 2 - 5.45 - GAP, x=0.75 + 5.45 + GAP)
+    text(s, x + 0.22, r3 + 0.45, 5.8, 0.62,
+         [[(f"{i:02d}  ", {"font": MONO, "color": ACCENT, "size": 9.5}), (h_, {"bold": True}), (b_, {"color": MUTED})]
+          for i, (h_, b_) in enumerate([("Pilot partners: ", "one EOC and one relief NGO for the next storm season"),
+                                        ("Dedicated Fireworks capacity; ", "Microsoft Foundry for agencies"),
+                                        ("Introductions ", "to dispatch and CAD software teams")], 1)], size=10.5, spacing=2.5, anim=True)
+    text(s, x + 0.22, r3 + 1.06, 5.8, 0.2, [[("repo ", {"color": ACCENT}), (REPO, {}), ("   demo ", {"color": ACCENT}), (SITE, {})]],
+         size=8.5, font=MONO)
+    pitch = (f"As a company: emergency operations centers, 911 centers and relief NGOs pay an annual subscription, plus a usage "
+             f"tier for surges. Screening a million posts costs {usd(o_cost)}, {basis}, against {usd(f_cost)} on {fsay}, "
+             "leaving room for strong margins, and every dispatcher decision becomes training data. Go-to-market: pilots "
+             "next hurricane season, then dispatch-software partners and new regions. We're asking for pilot partners. "
+             "Thank you.")
+    notes(s, "About 24 seconds, word for word (same script as guide/STORYBOARD.md, 2:36 to 3:00):\n" + pitch + "\n"
+             "If asked: the product is the dispatch console and an API for an agency's own tools; private deployment is planned, not built. "
+             "There is no price list yet; the pilots set it. "
+             + (f"The {usd(o_cost)} includes Fireworks' limited-time 50% discount; at full price it is {usd(o_full)} per million "
+                f"posts, still about {ratio(fr.get('cost_per_1m_usd'), o_full) or 0:.0f}x below {fbrand}. "
+                if o_full is not None and ratio(fr.get('cost_per_1m_usd'), o_full) else "")
+             + "Open weights mean an agency can run it privately; exporting the LoRA adapter is on the 90-day list. "
+             "HumAID is licensed non-commercial, so a commercial product retrains on licensed or agency data. "
+             "No customers, partners or contracts exist yet: pilots are the ask.\n"
+             f"Team: NarasingaMoorthy VeiluKanthaPerumal and Seth Caldwell. Code: {REPO}. Demo: {SITE}.\n"
              "Transition: fade. Leave this slide up for questions.")
     add_transition_and_timing(s, "fade")
+
+    apply_theme(deck.prs)
+    deck.finish()
 
     out.parent.mkdir(parents=True, exist_ok=True)
     deck.prs.save(out)

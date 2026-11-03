@@ -60,7 +60,7 @@ any test event{% if d.dedup_removed is number %}: {{ num(d.dedup_removed) }} of 
 
 | Key | System | Why it is here |
 | --- | --- | --- |
-| `rescue_radar` | Nemotron 3.5 Super + LoRA, trained on every example in `data/train_sft.jsonl` | The pre-registered main system: the newest checkpoint saved by 14:55 PT was fixed as the headline before test-set scoring{% if headline_ablation %} (**not scored yet**; see the deviation note below){% endif %} |
+| `rescue_radar` | Nemotron 3.5 Super + LoRA on `data/train_sft.jsonl`{% if ours_train.seen is number %} ({{ num(ours_train.examples) }} examples; the scored step-{{ ours_train.step }} checkpoint of the {{ num(ours_train.steps) }}-step run saw {{ num(ours_train.seen) }} of them){% endif %} | The pre-registered main system: the newest checkpoint saved by 14:55 PT was fixed as the headline before any fine-tuned model was scored on the test set{% if headline_ablation %} (**not scored yet**; see the deviation note below){% endif %} |
 | `rescue_radar_quick` | The same recipe on a smaller, class-balanced subset | Ablation: how much does more data help? |
 | `base_zero` | Nemotron 3.5 Super without fine-tuning, same prompt, same serving path | Isolates the effect of LoRA |
 | `opus_zero` | Claude Opus 5.5, zero-shot | Frontier reference |
@@ -68,7 +68,7 @@ any test event{% if d.dedup_removed is number %}: {{ num(d.dedup_removed) }} of 
 | `gpt_zero`, `gpt_few` | GPT-6.1 Terra (OpenAI API), zero-shot and 20-shot | Second frontier reference, **added after pre-registration** (not part of the pre-registered protocol) |
 
 {% if m.eval.preregistration %}
-The headline system, metrics and tests were written down before scoring in [`{{ m.eval.preregistration }}`](../{{ m.eval.preregistration }}).
+The headline system, metrics and tests were written down before any fine-tuned model was scored on the test set in [`{{ m.eval.preregistration }}`](../{{ m.eval.preregistration }}).
 {% endif %}
 {% if headline_ablation %}
 

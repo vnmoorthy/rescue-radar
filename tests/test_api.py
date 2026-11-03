@@ -355,3 +355,15 @@ def test_person_filter_keeps_people_with_storm_first_names():
     assert person("Still recovering from Hurricane Maria in Puerto Rico", "Maria") is None
     assert person("Cyclone Kenneth makes landfall", "Kenneth") is None
     assert person("Dorian is now a category 5", "Dorian") is None
+
+
+def test_triage_add_to_queue_payload(client):
+    """QA r1 blocker: the Triage view's 'Add to queue' must send a payload POST /api/queue accepts (event null)."""
+    src = (ROOT / "web" / "views" / "triage.js").read_text()
+    assert "event: 'triage'" not in src and "event: null" in src
+    body = {"post_id": "triage-abc123", "text": "We are trapped in the attic", "label": "requests_or_urgent_needs",
+            "event": None, "place": None}
+    r = client.post("/api/queue", json=body)
+    assert r.status_code == 200, r.text
+    assert any(i["post_id"] == "triage-abc123" for i in client.get("/api/queue").json()["items"])
+    assert client.post("/api/queue", json={**body, "post_id": "triage-x", "event": "triage"}).status_code == 422

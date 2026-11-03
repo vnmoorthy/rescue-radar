@@ -29,23 +29,23 @@
 
 **Design.** Train on 15 HumAID disasters from 2016-2018; test on 3,001 tweets sampled from 4 disasters from 2019 that are outside our fine-tuning data and every prompt (the frontier models' and the Nemotron base model's pretraining data is not public) (Hurricane Dorian, Cyclone Idai, Pakistan earthquake, Midwest floods), 254 of them rescue-critical. Every system gets the same instructions and label definitions (the 20-shot baselines also get 20 examples); the frontier models were scored on the tweets they answered (see limitations), and every comparison is paired on shared tweets. Protocol pre-registered at 13:49 PT before any fine-tuned score existed (`guide/PREREGISTRATION.md`). Deviations: the GPT-6.1 Terra baselines were added after pre-registration.
 
-**Dataset.** HumAID (Alam et al., ICWSM 2021), human-labeled, CC BY-NC-SA 4.0. Training set: 13,839 tweets capped per category (from the training log, `data/train_full.out`).
+**Dataset.** HumAID (Alam et al., ICWSM 2021), human-labeled, CC BY-NC-SA 4.0. Training set: 13,839 tweets capped per category (from the training log, `data/train_full.out`); the scored step-275 checkpoint saw 8,800 of them.
 
 | System | Tweets scored | Macro-F1 (95% CI) | Accuracy | Rescue-critical recall (95% CI) | Critical precision | Cost per 1M posts |
 | --- | --- | --- | --- | --- | --- | --- |
-| Rescue Radar, main run (13,839 examples) | 3,001 | 69.2% (64.8% to 72.2%) | 72.4% | 84.7% (80.2% to 88.9%) | 60.2% | $171 |
-| Rescue Radar, small-data run (3,939 examples) | 3,001 | 65.0% (61.8% to 67.8%) | 70.9% | 77.2% (72.2% to 82.2%) | 66.9% | $171 |
-| Nemotron 3.5 Super, no fine-tuning | 3,001 | 57.6% (54.2% to 60.5%) | 66.0% | 65.3% (59.7% to 71.2%) | 76.5% | $171 |
+| Rescue Radar, main run (step 275 of 432: 8,800 of 13,839 examples seen) | 3,001 | 69.2% (64.8% to 72.3%) | 72.4% | 84.7% (80.3% to 88.9%) | 60.2% | $171 |
+| Rescue Radar, small-data run (step 123 of 123: 3,936 of 3,939 examples seen) | 3,001 | 65.0% (61.8% to 67.8%) | 70.9% | 77.2% (72.2% to 82.2%) | 66.9% | $171 |
+| Nemotron 3.5 Super, no fine-tuning | 3,001 | 57.6% (54.2% to 60.5%) | 66.0% | 65.4% (59.7% to 71.2%) | 76.5% | $171 |
 | Claude Opus 5.5, 20-shot | 2,592 | 63.7% (59.1% to 67.3%) | 70.9% | 68.8% (62.7% to 75.0%) | 78.1% | $8,738 |
 | Claude Opus 5.5, zero-shot | 1,920 | 62.2% (57.6% to 67.0%) | 70.2% | 71.9% (64.7% to 78.9%) | 79.1% | $3,412 |
-| GPT-6.1 Terra, 20-shot | 3,001 | 60.6% (56.6% to 63.9%) | 67.8% | 70.9% (65.4% to 76.2%) | 65.5% | $1,418 |
+| GPT-6.1 Terra, 20-shot | 3,001 | 60.6% (56.7% to 63.9%) | 67.8% | 70.9% (65.4% to 76.3%) | 65.5% | $1,418 |
 | GPT-6.1 Terra, zero-shot | 3,001 | 60.6% (56.6% to 63.7%) | 66.7% | 71.7% (66.3% to 77.0%) | 64.1% | $499 |
 
-**Statistics: Rescue Radar, main run (13,839 examples) against each system, paired on the tweets both answered.**
+**Statistics: Rescue Radar, main run (step 275 of 432: 8,800 of 13,839 examples seen) against each system, paired on the tweets both answered.**
 
 | Against | Shared tweets | Macro-F1 difference (95% CI) | Rescue-critical recall difference (95% CI) | Accuracy difference | McNemar |
 | --- | --- | --- | --- | --- | --- |
-| Rescue Radar, small-data run (3,939 examples) | 3,001 | +4.2 pts (+2.0 to +6.5 pts) | +7.5 pts (+3.7 to +11.4 pts) | +1.5 pts (+0.3 to +2.7 pts) | p = 0.016 |
+| Rescue Radar, small-data run (step 123 of 123: 3,936 of 3,939 examples seen) | 3,001 | +4.2 pts (+2.0 to +6.5 pts) | +7.5 pts (+3.7 to +11.4 pts) | +1.5 pts (+0.3 to +2.7 pts) | p = 0.016 |
 | Nemotron 3.5 Super, no fine-tuning | 3,001 | +11.7 pts (+8.9 to +14.4 pts) | +19.3 pts (+14.2 to +24.4 pts) | +6.5 pts (+4.8 to +8.1 pts) | p < 0.001 |
 | Claude Opus 5.5, 20-shot | 2,592 | +5.5 pts (+2.6 to +8.5 pts) | +16.5 pts (+11.2 to +21.9 pts) | +2.2 pts (+0.5 to +4.0 pts) | p = 0.013 |
 | Claude Opus 5.5, zero-shot | 1,920 | +8.1 pts (+3.1 to +13.6 pts) | +17.6 pts (+11.2 to +24.3 pts) | +3.3 pts (+1.1 to +5.4 pts) | p = 0.003 |
@@ -65,7 +65,7 @@ Intervals come from 5,000 bootstrap resamples of tweets within each disaster; Mc
 
 ## Sponsor technology
 
-- **Fireworks:** serverless LoRA training (Training API), serverless sampling for live inference and the benchmark, and checkpoint promotion to a permanent model (`accounts/vnmoorthy/models/rescue-radar-nemotron-quick`).
+- **Fireworks:** serverless LoRA training (Training API), serverless sampling for live inference and the benchmark, and checkpoint promotion to permanent models (`accounts/vnmoorthy/models/rescue-radar-nemotron`, the headline step-275 checkpoint, and `accounts/vnmoorthy/models/rescue-radar-nemotron-quick`, the small-data ablation).
 - **NVIDIA:** Nemotron 3.5 Super (120B total, 12B active) is the base model we fine-tune; untuned Nemotron is our "before" baseline.
 - **Microsoft:** Presidio redacts personal data before review in the API and console.
 

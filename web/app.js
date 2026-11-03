@@ -53,6 +53,8 @@ function paintHealth(h, mode) {
 }
 
 async function main() {
+  window.__rrBooted = true;
+  const bootFail = document.getElementById('boot-fail'); if (bootFail) bootFail.remove();
   initTooltips();
   syncToggle(getTheme());
   document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
@@ -61,6 +63,14 @@ async function main() {
   const closeHelp = () => { if (!help.hidden) { help.hidden = true; document.getElementById('help-btn').focus(); } };
   document.getElementById('help-btn').addEventListener('click', openHelp);
   help.addEventListener('click', e => { if (e.target === help || e.target.closest('[data-close]')) closeHelp(); });
+  help.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const f = Array.from(help.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(n => !n.disabled);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !help.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !help.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+  });
 
   let conn;
   try {
@@ -145,6 +155,7 @@ async function main() {
   show(location.hash.slice(1) || 'replay');
 
   const typing = t => t && t.closest && t.closest('input:not([type="checkbox"]):not([type="range"]), textarea, select, [contenteditable="true"]');
+  const onControl = t => t && t.closest && t.closest('button, a[href], input, [role="button"], summary, [tabindex]:not(#main)');
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'Escape') { closeHelp(); return; }
@@ -153,7 +164,7 @@ async function main() {
     if (!help.hidden) return;
     if (/^[1-5]$/.test(e.key)) { e.preventDefault(); show(VIEWS[Number(e.key) - 1]); return; }
     if (e.key === ' ' || e.code === 'Space') {
-      if (current !== 'replay') return;
+      if (current !== 'replay' || onControl(e.target)) return;
       e.preventDefault();
       viewFor('replay').togglePlay();
       return;
@@ -163,7 +174,7 @@ async function main() {
     else if (k === 'r' && current === 'replay') viewFor('replay').reset();
     else if (k === 'g' && current === 'replay') viewFor('replay').toggleGT();
   });
-  document.addEventListener('keyup', e => { if ((e.key === ' ' || e.code === 'Space') && current === 'replay' && !typing(e.target)) e.preventDefault(); });
+  document.addEventListener('keyup', e => { if ((e.key === ' ' || e.code === 'Space') && current === 'replay' && !typing(e.target) && !onControl(e.target)) e.preventDefault(); });
 
   if (api.mode === 'live') {
     let lastOk = true;
@@ -172,6 +183,7 @@ async function main() {
         const h = await api.health();
         paintHealth(h, 'live');
         paintBadge(h);
+        if (h && h.frontier && h.frontier.name) { meta.frontier = { ...(meta.frontier || {}), name: h.frontier.name }; document.dispatchEvent(new CustomEvent('rr:health', { detail: h })); }
         if (!lastOk) toast('Server connection restored', 'ok');
         lastOk = true;
       } catch (e) {
@@ -188,7 +200,7 @@ async function main() {
       const retry = setInterval(async () => {
         try {
           if (await probeLive()) { clearInterval(retry); toast('Live server is back: reloading in live mode', 'ok'); setTimeout(() => location.reload(), 900); }
-        } catch { /* still down */ }
+        } catch (e) { if (e && e.status === 404) clearInterval(retry); /* static host: no /api here */ }
       }, 8000);
     }
   }

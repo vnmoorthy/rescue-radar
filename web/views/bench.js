@@ -163,7 +163,7 @@ function forest(keys, systems) {
       ? `<text class="lbl" x="0" y="${pos[j] + 15}" style="font-weight:700">${esc(r.head)}</text>`
       : `<g class="s${Math.min(r.i, 4)}" data-tip="${esc(shortSys(systems[r.k], r.k))} · ${esc(r.label)}<br>${r.v == null ? 'n/a' : (r.v * 100).toFixed(1) + '%'}${r.ci ? ` (95% CI ${(r.ci[0] * 100).toFixed(1)}–${(r.ci[1] * 100).toFixed(1)})` : ''}">
           <rect x="0" y="${pos[j]}" width="${W}" height="${rowH}" fill="transparent"/>
-          <text x="10" y="${pos[j] + 13}">${esc(shortSys(systems[r.k], r.k)).slice(0, 22)}</text>
+          <text x="10" y="${pos[j] + 13}"><title>${esc(shortSys(systems[r.k], r.k))}</title>${esc(clip(shortSys(systems[r.k], r.k), 22))}</text>
           ${r.ci ? `<line x1="${x(r.ci[0])}" x2="${x(r.ci[1])}" y1="${pos[j] + 9}" y2="${pos[j] + 9}" stroke="var(--s)" stroke-width="2.5" stroke-linecap="round"/>` : ''}
           ${r.v != null ? `<circle cx="${x(r.v)}" cy="${pos[j] + 9}" r="4.5" fill="var(--s)" stroke="var(--panel)" stroke-width="1.5"/>` : ''}
         </g>`).join('')}
@@ -258,7 +258,7 @@ function confusion(s) {
   const labs = c.labels || [];
   const n = labs.length;
   const cell = 36, L = 128, T = 96;
-  const W = L + n * cell + 4, H = T + n * cell + 4;
+  const W = L + n * cell + 84, H = T + n * cell + 4; // right margin: the last rotated column labels lean right
   let out = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Confusion matrix">`;
   labs.forEach((lab, j) => {
     out += `<text class="lbl${isCritical(lab) ? ' lbl--crit' : ''}" transform="translate(${L + j * cell + cell / 2 + 3},${T - 6}) rotate(-50)" style="font-size:10px">${esc(shortName(lab))}</text>`;
@@ -335,3 +335,5 @@ function niceStep(raw) {
   const m = raw / p;
   return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p;
 }
+
+function clip(name, n) { const s = String(name ?? ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }

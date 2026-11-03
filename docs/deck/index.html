@@ -541,12 +541,12 @@ body.pending .stamp{display:block}
     <div class="cell r" style="--i:2"><h4>Who pays</h4><ul>
       <li><b>County and city emergency operations centers</b></li>
       <li><b>911 centers</b> and <b>state emergency management</b></li>
-      <li><b>Relief NGOs</b> that already act on public requests</li>
-      <li class="later">Later: insurers, platform trust-and-safety teams</li></ul></div>
+      <li><b>Humanitarian organizations</b> that run response operations</li>
+      <li><b>Dispatch-software vendors</b> that embed the API</li></ul></div>
     <div class="cell r" style="--i:3"><h4>Product</h4><ul>
       <li><b>Dispatch console:</b> feed, map and priority queue</li>
       <li><b>API</b> that screens posts for an agency's own tools</li>
-      <li><b>On-prem / edge box</b> for when the network is down</li></ul></div>
+      <li class="later"><b>Private deployment</b> in the agency's own cloud: planned, not built</li></ul></div>
     <div class="cell r" style="--i:4"><h4>Pricing model</h4><ul>
       <li><b>Annual subscription per agency</b>, budgeted before the storm</li>
       <li><b>Usage tier</b> for high-volume screening in a surge</li>
@@ -556,22 +556,22 @@ body.pending .stamp{display:block}
       <ul>
       <li><b>Screening every post is affordable</b>: room for high gross margin</li>
       <li><b>Data moat:</b> dispatcher actions become new labels</li>
-      <li><b>Open weights:</b> agencies can run it privately</li>
-      <li><b>Wedge:</b> integration into dispatch and CAD systems</li></ul></div>
+      <li><b>Open weights:</b> a path to running it privately</li>
+      <li><b>Gated releases:</b> a new adapter ships only if it wins on held-out disasters</li></ul></div>
     <div class="cell r" style="--i:6"><h4>Go-to-market</h4><ul>
-      <li><b>Pilots</b> with a few emergency operations centers in the next hurricane season</li>
-      <li>Then <b>state contracts</b></li>
+      <li><b>Pilots</b> with emergency operations centers: replay a past local disaster, then shadow mode</li>
+      <li><b>Expand</b> by region and language</li>
       <li><b>Partnerships with dispatch-software vendors</b> to reach the agencies on their systems</li></ul></div>
     <div class="cell r" style="--i:7"><h4>Next 90 days</h4><ul>
       <li>Recruit pilot EOCs and one relief NGO</li>
       <li>Dedicated Fireworks deployment for surge latency</li>
-      <li>Export the LoRA adapter; prototype the edge box</li>
-      <li>Evaluate Spanish, French, Hindi and Urdu posts</li></ul></div>
+      <li>Export the LoRA adapter for private deployment</li>
+      <li>Multilingual evaluation</li></ul></div>
   </div>
   <div class="foot10">
     <div class="cell team10 r" style="--i:8"><h4>Team</h4>
       <p><b>NarasingaMoorthy VeiluKanthaPerumal</b>TMLR research on LLM downshifting and voice-pipeline routing</p>
-      <p><b>Seth Caldwell</b>Founder side of masky.ai: AI avatars and voice</p></div>
+      <p><b>Seth Caldwell</b>masky.ai</p></div>
     <div class="cell ask10 r" style="--i:9"><h4>The ask</h4><ol>
       <li><span><b>Pilot partners:</b> one EOC and one relief NGO for the next storm season</span></li>
       <li><span><b>Dedicated Fireworks capacity</b>; Microsoft Foundry for agencies</span></li>
@@ -626,12 +626,12 @@ body.pending .stamp{display:block}
   /* ---------- formatting ---------- */
   function num(v) { return (typeof v === 'number' && isFinite(v)) ? v : null; }
   var F = {
-    pct: function (x) { return (x * 100).toFixed(1) + '%'; },
+    pct: function (x) { return (Math.round(x * 1000 + (x >= 0 ? 1e-7 : -1e-7)) / 10).toFixed(1) + '%'; },
     pts: function (x) { var a = Math.abs(x * 100); return (x > 0.00049 ? '+' : (x < -0.00049 ? '−' : '')) + a.toFixed(1) + ' pts'; },
     int: function (x) { return Math.round(x).toLocaleString('en-US'); },
     ms: function (x) { return Math.round(x).toLocaleString('en-US') + ' ms'; },
     usd: function (x) { return '$' + (x >= 1000 ? Math.round(x).toLocaleString('en-US') : (x >= 10 ? x.toFixed(0) : x.toFixed(2))); },
-    p: function (x) { return x < 0.001 ? 'p < 0.001' : 'p = ' + (x < 0.01 ? x.toFixed(3) : x.toFixed(2)); },
+    p: function (x) { return x < 0.001 ? 'p < 0.001' : 'p = ' + (x < 0.1 ? x.toFixed(3) : x.toFixed(2)); },
     x: function (x) { return (x >= 10 ? x.toFixed(0) : x.toFixed(1)) + '×'; },
     raw: function (x) { return String(x); }
   };
@@ -731,15 +731,19 @@ body.pending .stamp{display:block}
     var v = parseFloat(e.dataset.v), f = e.dataset.fmt || 'raw';
     if (!isFinite(v)) return;
     if (e._raf) cancelAnimationFrame(e._raf);
+    clearTimeout(e._cuT);
+    e.textContent = F[f](v);
+    var rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (rm || document.hidden) return;
     var t0 = 0, dur = 1300;
-    e.textContent = F[f](0);
     var step = function (now) {
-      if (!t0) t0 = now;
+      if (!t0) { t0 = now; e._raf = requestAnimationFrame(step); return; }
       var k = Math.min(1, (now - t0) / dur), ez = 1 - Math.pow(1 - k, 3);
       e.textContent = F[f](k >= 1 ? v : v * ez);
       if (k < 1) e._raf = requestAnimationFrame(step);
     };
     e._raf = requestAnimationFrame(step);
+    e._cuT = setTimeout(function () { if (e._raf) cancelAnimationFrame(e._raf); e.textContent = F[f](v); }, dur + 150);
   }
 
   /* ---------- radar blips ---------- */
@@ -849,19 +853,38 @@ body.pending .stamp{display:block}
     var g = CON.pins[p.place.name + '|' + p.place.lat + '|' + p.place.lng];
     if (g) { g.classList.remove('ping'); void g.getBoundingClientRect(); g.classList.add('ping'); }
   }
+  var QUEUE_IDS = ['1167491428508930048', '1168251202934587392', '1168339919636295680', '1168306378944987141'];
+  var FEED_START_ID = '1168340422365777920';
+  var OFFTOPIC = /\bthe wall\b|\bmexico\b|\btrump\b|\bdemocrat|\brepublican/i;
+  function confirmed(p) {
+    if (REPLAY.src !== 'ours') return !!CRIT[p.truth];
+    return !!(p.ours && p.ours.critical && (p.truth_critical === true || CRIT[p.truth]));
+  }
   function feedStep() {
     var posts = REPLAY.posts; if (!posts.length) return;
-    var p = posts[CON.i % posts.length]; CON.i += 1;
+    var p = posts[CON.i % posts.length], guard = 0; CON.i += 1;
+    while (OFFTOPIC.test(p.text || '') && guard++ < 50) { p = posts[CON.i % posts.length]; CON.i += 1; }
     var feed = $('#feed'); feed.insertBefore(feedItem(p), feed.firstChild);
     while (feed.children.length > 7) feed.removeChild(feed.lastChild);
-    if (CRIT[postLabel(p)]) { addQueue(p); pingPin(p); }
+    if (confirmed(p)) { addQueue(p); pingPin(p); }
   }
   function consoleEnter() {
     var feed = $('#feed'), q = $('#queue'); feed.textContent = ''; q.textContent = ''; CON.q = 0; $('#q-n').textContent = '0';
     var posts = REPLAY.posts;
     if (!posts.length) { feed.appendChild(el('div', 'map-cap', 'Replay data pending.')); return; }
-    CON.i = 0;
-    var crit = posts.filter(function (p) { return CRIT[postLabel(p)]; }).slice(0, 4).reverse();
+    /* Queue: hand-checked posts that Rescue Radar flagged AND the human label marks rescue-critical (real model outputs).
+       Feed: starts at a hand-checked point of the Dorian stream (the Marsh Harbour flooding post). Falls back to the
+       densest window of confirmed posts if these ids are missing from the export. */
+    var byId = {}; posts.forEach(function (p, j) { byId[String(p.id)] = j; });
+    var crit = QUEUE_IDS.map(function (id) { return posts[byId[id]]; }).filter(function (p) { return p && confirmed(p); });
+    var best = byId[FEED_START_ID];
+    if (best === undefined || crit.length < 3) {
+      var hits = posts.map(function (p) { return confirmed(p) ? 1 : 0; }), W = 80, bestN = -1, run = 0; best = 0;
+      for (var j = 0; j < hits.length; j++) { run += hits[j]; if (j >= W) run -= hits[j - W]; if (j >= W - 1 && run > bestN) { bestN = run; best = j - W + 1; } }
+      var before = posts.slice(0, best).filter(confirmed);
+      crit = before.length ? before.slice(-4) : posts.filter(confirmed).slice(0, 4);
+    }
+    CON.i = best;
     crit.forEach(addQueue);
     for (var k = 0; k < 6; k++) feedStep();
     clearInterval(CON.timer); CON.timer = setInterval(feedStep, 1300);
@@ -1002,7 +1025,7 @@ body.pending .stamp{display:block}
         row.appendChild(tr);
         var val = el('span', 'bval', v === null ? 'pending' : F.pct(v));
         if (v === null) val.classList.add('pending-txt');
-        if (hasCi) val.appendChild(el('small', null, (ci[0] * 100).toFixed(1) + '–' + (ci[1] * 100).toFixed(1)));
+        if (hasCi) val.appendChild(el('small', null, F.pct(ci[0]).slice(0, -1) + '–' + F.pct(ci[1]).slice(0, -1)));
         row.appendChild(val); g.appendChild(row);
       });
       box.appendChild(g);
@@ -1046,7 +1069,7 @@ body.pending .stamp{display:block}
       parts.push(s);
       if (cc.unit) unit = cc.unit; if (num(cc.n) !== null) nRes = cc.n;
     });
-    sb.textContent = parts.length ? ('Test set re-drawn ' + (nRes ? F.int(nRes) + ' times' : 'many times') + (unit ? ', ' + unit : '') + '. ' + parts.join(' ')) : 'pending: bootstrap intervals fill in from results.json.';
+    sb.textContent = parts.length ? ('Test set re-drawn ' + (nRes ? F.int(nRes) + ' times' : 'many times') + (unit ? ' (unit: ' + unit + ')' : '') + '. ' + parts.join(' ')) : 'pending: bootstrap intervals fill in from results.json.';
   }
 
   /* ---------- slide 8 speed and cost ---------- */
@@ -1177,14 +1200,17 @@ body.pending .stamp{display:block}
   function toggleFs() {
     var d = document, de = d.documentElement;
     try {
-      if (!(d.fullscreenElement || d.webkitFullscreenElement)) { (de.requestFullscreen || de.webkitRequestFullscreen).call(de); }
-      else { (d.exitFullscreen || d.webkitExitFullscreen).call(d); }
+      var pr = (!(d.fullscreenElement || d.webkitFullscreenElement))
+        ? (de.requestFullscreen || de.webkitRequestFullscreen).call(de)
+        : (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+      if (pr && typeof pr.catch === 'function') pr.catch(function () { /* fullscreen denied */ });
     } catch (e) { /* fullscreen not available */ }
   }
   window.addEventListener('resize', fit); fit();
   document.addEventListener('keydown', function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var k = e.key;
+    if ((k === 'Enter' || k === ' ') && e.target && e.target.closest && e.target.closest('button, a, input, textarea, select, [contenteditable]')) return;
     if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' ' || k === 'Enter') { e.preventDefault(); go(cur + 1); }
     else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace') { e.preventDefault(); go(cur - 1); }
     else if (k === 'Home') go(0);
@@ -1212,7 +1238,22 @@ body.pending .stamp{display:block}
   /* ---------- data ---------- */
   function getJSON(url) {
     if (location.protocol === 'file:') return Promise.resolve(null);
-    return fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    var tries = 0;
+    var once = function () {
+      return fetch(url, { cache: 'no-store' }).then(function (r) {
+        if (r.ok) return r.json();
+        if (r.status === 404) return null;
+        throw new Error('HTTP ' + r.status);
+      });
+    };
+    var attempt = function () {
+      return once().catch(function () {
+        tries += 1;
+        if (tries > 3) return null;
+        return new Promise(function (res) { setTimeout(res, 300 * tries); }).then(attempt);
+      });
+    };
+    return attempt();
   }
   function firstJSON(urls) {
     return urls.reduce(function (p, u) { return p.then(function (v) { return v || getJSON(u); }); }, Promise.resolve(null));

@@ -37,3 +37,4 @@ off before the label and scored as wrong. That run is not used; its files are in
 
 ## Corrections
 - 14:40 PT: the quick run's training-set size was first written here as 3,839. The training log shows 3,939 (9 categories x 400 + all 339 `missing_or_found_people` examples). Nothing else in the protocol changed.
+- 15:59 PT: the main run did not finish by the 14:55 cutoff, so, as pre-registered, the main system is its step-275 checkpoint (saved 14:50:36). At batch size 32 it saw 8,800 of the 13,839 training examples (about 64% of one shuffled pass). Earlier text describing it as trained on all 13,839 examples was wrong.

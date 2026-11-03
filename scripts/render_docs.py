@@ -72,9 +72,13 @@ def f(x):
 
 
 def pct(x, digits=1):
-    """0.8123 -> '81.2%'."""
+    """0.8123 -> '81.2%'. Half-up on the decimal value (0.7225 -> '72.3%'), the same rule as the deck and console JS."""
     v = f(x)
-    return NA if v is None else f"{v * 100:.{digits}f}%"
+    if v is None:
+        return NA
+    from decimal import Decimal, ROUND_HALF_UP
+    q = (Decimal(repr(v)) * 100).quantize(Decimal(1).scaleb(-digits), rounding=ROUND_HALF_UP)
+    return f"{q:.{digits}f}%"
 
 
 def pts(x, digits=1):
@@ -398,6 +402,16 @@ def train_header(system):
             "source": f"data/train{tag}.out"}
 
 
+def seen_by_checkpoint(th, sysm):
+    """Add 'seen': examples the scored checkpoint trained on (checkpoint_step x batch, capped at the file size)."""
+    th = dict(th or {})
+    step = f(sysm.get("checkpoint_step")) if isinstance(sysm, dict) else None
+    if th.get("examples") and th.get("batch") and step:
+        th["seen"] = int(min(th["examples"], step * th["batch"]))
+        th["step"] = int(step)
+    return th
+
+
 def build_context(warn=lambda msg: print(f"warning: {msg}", file=sys.stderr)):
     m = load_metrics(warn)
     systems = m.get("systems") if isinstance(m.get("systems"), dict) else {}
@@ -407,7 +421,11 @@ def build_context(warn=lambda msg: print(f"warning: {msg}", file=sys.stderr)):
     for key, label in (("rescue_radar_quick", "Rescue Radar, small-data run"), ("rescue_radar", "Rescue Radar, main run")):
         th = train_header(key)
         if isinstance(systems.get(key), dict) and th.get("examples"):
-            systems[key] = {**systems[key], "name": f"{label} ({th['examples']:,} examples)"}
+            sn = seen_by_checkpoint(th, systems[key])
+            if sn.get("seen") and sn["seen"] < th["examples"]:
+                systems[key] = {**systems[key], "name": f"{label} (step {sn['step']} of {th['steps']}: {sn['seen']:,} of {th['examples']:,} examples seen)"}
+            else:
+                systems[key] = {**systems[key], "name": f"{label} ({th['examples']:,} examples)"}
     head = m.get("headline") if isinstance(m.get("headline"), dict) else {}
     ours_key = head.get("ours") or "rescue_radar"
     frontier_key = head.get("frontier") or "opus_few"
@@ -442,7 +460,8 @@ def build_context(warn=lambda msg: print(f"warning: {msg}", file=sys.stderr)):
         "quick": systems.get("rescue_radar_quick") or {},
         "cmp": cmp, "cmps": [c for c in comps if c.get("a") == ours_key],
         "d": (d := data_stats()), "integ": integrations(), "repo": REPO, "site": SITE,
-        "ours_train": train_header(ours_key), "headline_ablation": ours_key == "rescue_radar_quick",
+        "ours_train": seen_by_checkpoint(train_header(ours_key), systems.get(ours_key) or {}),
+        "headline_ablation": ours_key == "rescue_radar_quick",
         "ours_run": ((d.get("runs") or {}).get("_full" if ours_key == "rescue_radar" else "quick") or {})
         if isinstance(d, dict) else {},
         "pct": pct, "pts": pts, "usd": usd, "ms": ms, "pval": pval, "num": num, "ci": ci, "ci_pts": ci_pts,
