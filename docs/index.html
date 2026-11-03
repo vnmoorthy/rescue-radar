@@ -17,7 +17,7 @@ d.setAttribute('data-theme',t);d.setAttribute('data-theme-src',src);})();</scrip
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Work+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=sunrise-2">
+<link rel="stylesheet" href="styles.css?v=sunrise-3">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -51,6 +51,11 @@ d.setAttribute('data-theme',t);d.setAttribute('data-theme-src',src);})();</scrip
 
 <div class="shell">
   <nav class="rail" aria-label="Views">
+    <span class="rail__group" aria-hidden="true">Live</span>
+    <button type="button" class="rail__btn" data-view="live" aria-label="Live city (6)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.2"/><path d="M8.5 15.5a5 5 0 0 1 0-7M15.5 8.5a5 5 0 0 1 0 7M5.8 18.2a8.8 8.8 0 0 1 0-12.4M18.2 5.8a8.8 8.8 0 0 1 0 12.4"/></svg>
+      <span>Live city</span><kbd>6</kbd></button>
+    <span class="rail__group" aria-hidden="true">Historic</span>
     <button type="button" class="rail__btn" data-view="replay" aria-label="Live Replay (1)">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><path d="M12 12 18 6"/></svg>
       <span>Replay</span><kbd>1</kbd></button>
@@ -74,6 +79,7 @@ d.setAttribute('data-theme',t);d.setAttribute('data-theme-src',src);})();</scrip
     <section class="view" id="view-h2h" data-view="h2h" aria-label="Head-to-Head" hidden></section>
     <section class="view" id="view-bench" data-view="bench" aria-label="Benchmark" hidden></section>
     <section class="view" id="view-how" data-view="how" aria-label="How it works" hidden></section>
+    <section class="view" id="view-live" data-view="live" aria-label="Live city" hidden></section>
   </main>
 </div>
 
@@ -88,6 +94,7 @@ d.setAttribute('data-theme',t);d.setAttribute('data-theme-src',src);})();</scrip
     <dl class="keys">
       <div><dt><kbd>Space</kbd></dt><dd>Play / pause the live replay</dd></div>
       <div><dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Replay · Triage · Head-to-head · Benchmark · How it works</dd></div>
+      <div><dt><kbd>6</kbd></dt><dd>Live city (real 911 dispatch feeds)</dd></div>
       <div><dt><kbd>R</kbd></dt><dd>Reset the replay</dd></div>
       <div><dt><kbd>G</kbd></dt><dd>Show / hide ground truth</dd></div>
       <div><dt><kbd>T</kbd></dt><dd>Toggle light / dark theme</dd></div>
@@ -100,7 +107,7 @@ d.setAttribute('data-theme',t);d.setAttribute('data-theme-src',src);})();</scrip
 <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script type="module" src="app.js?v=sunrise-2"></script>
+<script type="module" src="app.js?v=sunrise-3"></script>
 <script>/* Watchdog: if any console module fails to load, main() never runs. Say so instead of hanging on "Connecting". */
 setTimeout(function(){if(window.__rrBooted)return;var msg='Could not load the console scripts. Reload the page.';
 var h=document.getElementById('health');if(h)h.textContent=msg;var m=document.getElementById('main');

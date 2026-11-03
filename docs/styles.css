@@ -692,6 +692,25 @@ table.data tr.row--crit td:first-child { box-shadow: inset 3px 0 0 var(--cat-req
   .health .pill--static .lbl-long { display: none; }
   .toasts { left: 16px; right: 16px; align-items: stretch; }
 }
+
+/* ---------- Live City view ---------- */
+.rail__group { margin: 8px 6px 2px; font: 600 9.5px/1 var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.rail__group:first-child { margin-top: 2px; }
+.live { display: flex; flex-direction: column; gap: 12px; height: calc(100vh - var(--top-h) - 38px); min-height: 560px; }
+.live .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#lv-map { position: absolute; inset: 0; background: var(--bg-2); }
+.lv-more { font: 500 11px/1.2 var(--font-mono); align-self: center; padding: 0 4px; }
+.lv-note { border-top: 1px solid var(--line); font-size: 12px; color: var(--text-2); line-height: 1.55; }
+.lv-types { display: flex; flex-direction: column; gap: 7px; }
+.lv-type { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 34px; gap: 8px; align-items: center; }
+.lv-type__name { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv-type__bar { height: 7px; border-radius: 4px; background: var(--bg-2); overflow: hidden; }
+.lv-type__bar i { display: block; height: 100%; border-radius: 4px; background: var(--info); transition: width .4s ease; }
+.lv-type__n { font-size: 12px; text-align: right; color: var(--text); }
+.live .p-queue { display: flex; flex-direction: column; }
+.live .p-queue #lv-breakdown { overflow: auto; flex: 1; min-height: 0; }
+@media (max-width: 1100px) { .live { height: auto; min-height: 0; } .live .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
   .brand__mark .sweep, .brand__mark .blip, .diagram .flow--anim { animation: none !important; }

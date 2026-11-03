@@ -93,6 +93,7 @@ Ten slides: the problem, the product, the held-out-disaster benchmark, results a
 1. Open the **[live demo](https://vnmoorthy.github.io/rescue-radar/)**. It runs in your browser: no account, no API key, no backend.
 2. In **Live Replay**, pick one of the {{ num(m.eval.test_events) }} held-out 2019 disasters and press <kbd>Space</kbd>. Real posts arrive in their original order; the ones the model marks rescue-critical go to the priority queue, with personal data redacted.
 3. Open **Benchmark** to see how those labels score against {{ frontier_name }} on {{ num(m.eval.n) }} posts the model never saw, then flip through the **[slides](https://vnmoorthy.github.io/rescue-radar/deck/)**.
+4. Switch to **[Live city](https://vnmoorthy.github.io/rescue-radar/#live)** to watch a real city right now: San Francisco's dispatched 911 calls (police, sheriff, fire and EMS), polled straight from the city's open-data feeds in your browser and drawn on the same map and feed — the live situational layer next to the historic replays above.
 
 <!-- ===================================================================== (b) Try it locally in 60 seconds -->
 
@@ -217,7 +218,7 @@ Small classes have wide intervals: read per-class numbers for categories with fe
 
 ## How it works
 
-1. **Ingest.** Posts arrive one by one. The demo replays the real 2019 disaster tweets in their original order (a tweet ID is a Twitter snowflake, so its post time is `(id >> 22) + 1288834974657` ms), or classifies text you paste or upload. Live stream ingestion is not built yet.
+1. **Ingest.** Posts arrive one by one. The demo replays the real 2019 disaster tweets in their original order (a tweet ID is a Twitter snowflake, so its post time is `(id >> 22) + 1288834974657` ms), or classifies text you paste or upload. The Live city view additionally polls a real city's open 911 dispatch feeds (San Francisco today); live *social*-stream ingestion is not built yet.
 2. **Classify.** One instruction prompt with the {{ num(d.labels_n) }} category definitions, one label out. The LoRA-tuned Nemotron runs on Fireworks serverless sampling at temperature 0; its reasoning block is closed in the prompt so it answers with the label alone.
 3. **Prioritize.** Rescue-critical labels (`requests_or_urgent_needs`, `injured_or_dead_people`, `missing_or_found_people`) go to the priority queue. Everything else stays in the situational-awareness feed.
 4. **Protect.** Before a person reads a post, `rr/scrub.py` replaces phone numbers, emails, handles, URLs and street addresses with placeholders{% if integ.presidio %}, and people's names too when Microsoft Presidio is installed (a regex-only engine runs otherwise){% endif %}. This is best effort, and it applies to what the dispatcher sees: the raw post is what goes to the model providers.
@@ -424,6 +425,7 @@ What exists today is a working dispatch console, an HTTP API and a held-out benc
 | Surface | What it is | Status |
 | --- | --- | --- |
 | Dispatch console | Map, priority queue, situational feed, dispatch / resolve / dismiss with notes, CSV export | Built (this repo) |
+| Live city feed | Real 911 dispatch calls from a city's open-data feeds on the console map and feed (San Francisco today) | Built (this repo); more cities and live social ingestion are roadmap |
 | Triage API | `/api/classify` and the queue endpoints, for dispatch and emergency-management software | Built; a product needs authentication, rate limits and an uptime commitment |
 | Private deployment | The open-weight base model plus our adapter, run in the customer's own cloud or data center | Planned: adapter export is not built yet |
 | Standard alert export | Queue items as Common Alerting Protocol (CAP) messages for dispatch systems | Planned |
@@ -507,6 +509,8 @@ We tried, and measured it. On the {{ num(cmp.n) }} posts both answered, {{ front
 ## Roadmap
 
 - [ ] Dedicated Fireworks deployment of the promoted model for steady latency at disaster-time volume
+- [ ] Live social ingestion behind the Live city view: Reddit (OAuth API) and local-news RSS polled server-side and classified by the model; X and Facebook feeds depend on paid or partner API access
+- [ ] More cities in the Live city view (any city publishing CAD dispatch open data can be added as one adapter function)
 - [ ] Microsoft Foundry deployment path for agencies that run on Azure
 - [ ] Learn from dispatcher actions: dispatched and dismissed items become new training labels
 - [ ] Cluster near-duplicate requests so one address is not dispatched five times

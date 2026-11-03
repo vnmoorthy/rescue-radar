@@ -7,9 +7,10 @@ import { createTriage } from './views/triage.js';
 import { createH2H } from './views/h2h.js';
 import { createBench } from './views/bench.js';
 import { createHow } from './views/how.js';
+import { createLive } from './views/live.js';
 
-const VIEWS = ['replay', 'triage', 'h2h', 'bench', 'how'];
-const FACTORIES = { replay: createReplay, triage: createTriage, h2h: createH2H, bench: createBench, how: createHow };
+const VIEWS = ['replay', 'triage', 'h2h', 'bench', 'how', 'live'];
+const FACTORIES = { replay: createReplay, triage: createTriage, h2h: createH2H, bench: createBench, how: createHow, live: createLive };
 const root = document.documentElement;
 const getTheme = () => (root.dataset.theme === 'light' ? 'light' : 'dark');
 
@@ -162,7 +163,7 @@ async function main() {
     if (typing(e.target)) return;
     if (e.key === '?' || (e.key === '/' && e.shiftKey)) { e.preventDefault(); if (help.hidden) openHelp(); else closeHelp(); return; }
     if (!help.hidden) return;
-    if (/^[1-5]$/.test(e.key)) { e.preventDefault(); show(VIEWS[Number(e.key) - 1]); return; }
+    if (/^[1-6]$/.test(e.key)) { e.preventDefault(); show(VIEWS[Number(e.key) - 1]); return; }
     if (e.key === ' ' || e.code === 'Space') {
       if (current !== 'replay' || onControl(e.target)) return;
       e.preventDefault();

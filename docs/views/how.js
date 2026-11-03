@@ -24,7 +24,7 @@ export function createHow(root, ctx) {
     const fact = (v, k) => `<div class="fact"><div class="fact__v num">${v == null ? 'n/a' : esc(typeof v === 'number' ? fmtInt(v) : v)}</div><div class="fact__k">${esc(k)}</div></div>`;
     root.innerHTML = `
       <div class="view-head"><div><div class="eyebrow">View 5 · architecture</div><h1>How it works</h1>
-        <p>Rescue Radar classifies every post (a replay of recorded 2019 posts, or text you paste or upload; live stream ingestion is not built yet) into the 10 HumAID humanitarian categories, redacts personal data before a dispatcher reads it, and pushes rescue-critical ones to a priority queue. A human makes every call.</p></div></div>
+        <p>Rescue Radar classifies every post (a replay of recorded 2019 posts, or text you paste or upload; the Live city view streams real 911 dispatch open data, but live <i>social</i>-stream ingestion is not built yet) into the 10 HumAID humanitarian categories, redacts personal data before a dispatcher reads it, and pushes rescue-critical ones to a priority queue. A human makes every call.</p></div></div>
       <div class="how">
         <section class="panel" aria-label="Architecture diagram">
           <div class="panel__head"><h2 class="panel__title">Pipeline</h2><span class="panel__meta">serving path on top, evaluation loop below</span></div>
