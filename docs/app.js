@@ -7,7 +7,7 @@ import { createTriage } from './views/triage.js';
 import { createH2H } from './views/h2h.js';
 import { createBench } from './views/bench.js';
 import { createHow } from './views/how.js';
-import { createLive } from './views/live.js';
+import { createLive } from './views/live.js?v=sunrise-7'; // versioned with index.html: Pages caches modules for 10 min
 
 const VIEWS = ['replay', 'triage', 'h2h', 'bench', 'how', 'live'];
 const FACTORIES = { replay: createReplay, triage: createTriage, h2h: createH2H, bench: createBench, how: createHow, live: createLive };
