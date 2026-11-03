@@ -5,6 +5,7 @@ set -euo pipefail
 PY=.venv/bin/python
 $PY -m rr.evaluate                 # results/metrics.json from data/preds/*.jsonl
 $PY scripts/export_static.py       # docs/ (GitHub Pages console + data)
+$PY scripts/embed_deck_data.py     # docs/deck/embedded.js: deck numbers work from file:// too
 $PY scripts/render_docs.py         # README.md, guide/*.md from their templates
 $PY deck/build_pptx.py             # deck/RescueRadar.pptx
 $PY -m pytest -q tests/            # API tests, no network

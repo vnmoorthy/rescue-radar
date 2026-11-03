@@ -594,6 +594,7 @@ body.pending .stamp{display:block}
 </div>
 </div>
 
+<script src="embedded.js"></script>
 <script>
 (function () {
   'use strict';
@@ -1237,7 +1238,11 @@ body.pending .stamp{display:block}
 
   /* ---------- data ---------- */
   function getJSON(url) {
-    if (location.protocol === 'file:') return Promise.resolve(null);
+    if (location.protocol === 'file:') {
+      var E = window.RR_EMBED || {};
+      var hit = /results\.json$/.test(url) ? E.results : /replay\//.test(url) ? E.replay : /meta\.json$/.test(url) ? E.meta : null;
+      return Promise.resolve(hit || null);
+    }
     var tries = 0;
     var once = function () {
       return fetch(url, { cache: 'no-store' }).then(function (r) {

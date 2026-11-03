@@ -2,7 +2,7 @@
 # Demo runbook (10 minutes)
 
 For the presenter. Numbers on this page are rendered from `results/metrics.json`
-(generated 2026-11-02T16:03:48). If one shows `n/a`, do not
+(generated 2026-11-02T16:18:45). If one shows `n/a`, do not
 say a number out loud: point at the Benchmark view instead.
 
 **Headline to remember:** paired on the 2,592 posts (from 4 disasters our fine-tune

@@ -169,7 +169,7 @@ Small classes have wide intervals: read per-class numbers for categories with fe
 
 </details>
 
-<sub>Results generated 2026-11-02T16:03:48 by `python -m rr.evaluate`. Full numbers, including confusion matrices: [`results/metrics.json`](results/metrics.json).</sub>
+<sub>Results generated 2026-11-02T16:18:45 by `python -m rr.evaluate`. Full numbers, including confusion matrices: [`results/metrics.json`](results/metrics.json).</sub>
 
 ## How it works
 
@@ -546,7 +546,7 @@ Everything here was built on **November 2, 2026** at Fireworks: Deploy. Times ar
 | 14:55 | **Freeze.** By the pre-registered rule, the main run's newest checkpoint saved by 14:55, step 275 (saved 14:50:36), is frozen as the main system at 14:55:04. The run was still training; later checkpoints are not scored, because test scores never pick a checkpoint. | [`data/active_model.json`](data/active_model.json) |
 | about 15:02 | Frozen checkpoint scored on all 3,001 test posts | file time of `data/preds/rescue_radar.jsonl` |
 | 15:05 | **Product.** First public commit: dispatch console, HTTP API, static demo on GitHub Pages, slide deck and docs | `git log` |
-| 16:03 | `results/metrics.json` generated with paired statistics for every system | `results/metrics.json` |
+| 16:18 | `results/metrics.json` generated with paired statistics for every system | `results/metrics.json` |
 | 15:26 onward | **QA.** Light and dark themes across console, site, deck and README art (15:26), cache-busted assets (15:33), then a QA pass over the console, site, deck and docs | `git log` |
 
 <!-- ===================================================================== (h) Tech stack, optional -->
