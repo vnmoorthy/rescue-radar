@@ -135,11 +135,20 @@ const CITIES = [{
 }];
 const WINDOWS = [{ h: 2, label: '2 h' }, { h: 6, label: '6 h' }, { h: 24, label: '24 h' }];
 
+// Priority panel ranking. Every call in it is emergency priority by the city's own code (police A, fire/EMS 3);
+// open calls come first, and among them call types where someone may be hurt or in danger go on top. That is a
+// keyword match on the city's call-type text, a triage aid that is disclosed in the panel, not a judgment of the call.
+const LIFE_SAFETY = /shoot|shots|stab|gun|knife|weapon|armed|assault|battery|robbery|carjack|kidnap|homicide|domestic|suicide|overdose|cardiac|unconscious|breathing|person down|injur|h&r|collision|medical|fire|smoke|explosi|bomb|rescue|drown|distress|entrap|extricat|collapse|hazmat|gas leak|missing/i;
+const NOT_LIFE_SAFETY = /no weapon|alarm|fireworks/i;
+const lifeSafety = e => LIFE_SAFETY.test(e.type || '') && !NOT_LIFE_SAFETY.test(e.type || '');
+const PRIO_CLOSED_MAX = 12; // closed emergencies listed under the open ones, newest first
+
 export function createLive(root, ctx) {
   const S = {
     city: CITIES[0], windowH: 6, events: new Map(), timers: [], activeView: false,
     map: null, layer: null, renderer: null, markers: new Map(), filter: 'all',
     lastFetch: {}, feedErr: {}, firstLoad: true, social: null, socialErr: null,
+    selected: null, ring: null, onArrive: null, prioSeen: new Set(), prioReady: false, prioHTML: '',
   };
   const feedOn = Object.fromEntries(S.city.feeds.map(f => [f.id, f.on]));
 
@@ -175,6 +184,11 @@ export function createLive(root, ctx) {
           <div class="map-legend" aria-hidden="true"><span><i class="lg-crit"></i>Emergency priority</span><span><i class="lg-other"></i>Other calls</span></div>
         </div>
       </section>
+      <section class="panel p-prio" aria-label="Priority calls">
+        <div class="panel__head"><h2 class="panel__title">Priority</h2><span class="panel__meta" id="lv-prio-meta">&nbsp;</span></div>
+        <div class="feed prio-list" id="lv-prio" aria-label="Emergency-priority calls, open ones first. Choose one to show it on the map."><div class="feed__empty"><span class="spinner"></span> Contacting the city feeds…</div></div>
+        <div class="lv-prio-foot">Police priority A and fire/EMS code 3 only. Open first, <i class="prio__life" aria-hidden="true"></i>life-safety types on top. Choose one to see it on the map.</div>
+      </section>
       <section class="panel p-feed" aria-label="Live dispatch feed">
         <div class="panel__head"><h2 class="panel__title">Dispatch feed</h2><span class="panel__meta" id="lv-feed-meta">&nbsp;</span></div>
         <div class="queue-filters" role="group" aria-label="Filter feed">
@@ -199,6 +213,7 @@ export function createLive(root, ctx) {
     fresh: $('#lv-fresh'), freshSub: $('#lv-fresh-sub'), feed: $('#lv-feed'), feedMeta: $('#lv-feed-meta'),
     mapMeta: $('#lv-map-meta'), breakdown: $('#lv-breakdown'), brkMeta: $('#lv-brk-meta'), refresh: $('#lv-refresh'),
     social: $('#lv-social'), socMeta: $('#lv-soc-meta'), socNote: $('#lv-soc-note'),
+    prio: $('#lv-prio'), prioMeta: $('#lv-prio-meta'), mapPanel: $('.p-map'),
   };
 
   // ---------- map ----------
@@ -239,7 +254,7 @@ export function createLive(root, ctx) {
   }
   function popupHTML(e) {
     return `<div class="pop__head"><span class="tag ${e.priority === 'crit' ? 'tag--bad' : ''}">${esc(prName(e))}</span>
-        <span class="tag">${esc(e.agency)}</span>${e.active ? '<span class="tag tag--warn">open</span>' : '<span class="tag tag--ok">closed</span>'}</div>
+        <span class="tag">${esc(e.agency)}</span>${e.active ? '<span class="tag tag--warn">open</span>' : '<span class="tag tag--ok">closed</span>'}${e.onscene && e.active ? '<span class="tag tag--ok">on scene</span>' : ''}</div>
       <div class="pop__meta">${esc(when(e))}${e.neighborhood ? ` · ${esc(e.neighborhood)}` : ''}</div>
       <div class="pop__text">${txt(e.type)}${e.place ? ` — ${txt(e.place)}` : ''}${e.units > 1 ? ` · ${fmtInt(e.units)} units` : ''}</div>`;
   }
@@ -254,7 +269,7 @@ export function createLive(root, ctx) {
       let m = S.markers.get(e.id);
       if (!m) {
         m = window.L.circleMarker([e.lat, e.lng], { ...markerStyle(e), renderer: S.renderer });
-        m.on('click', () => m.bindPopup(popupHTML(e), { maxWidth: 300 }).openPopup());
+        m.on('click', () => select(e.id, { fly: false }));
         m.addTo(S.layer);
         S.markers.set(e.id, m);
         if (e.priority === 'crit' && !S.firstLoad && !reducedMotion()) {
@@ -272,6 +287,65 @@ export function createLive(root, ctx) {
   function repaintMarkers() {
     const byId = new Map(visible().map(e => [e.id, e]));
     for (const [id, m] of S.markers) { const e = byId.get(id); if (e) m.setStyle(markerStyle(e)); }
+  }
+
+  // ---------- selection: jump to one call on the map (Priority panel, feed card or a map dot) ----------
+  function select(id, { fly = true } = {}) {
+    const e = S.events.get(id);
+    if (!e) return;
+    S.selected = id;
+    markSelected({ scroll: !fly });
+    const m = S.markers.get(id);
+    if (!m) {
+      clearRing();
+      if (S.map) S.map.closePopup(); // the previous call's popup would read as this one's
+      toast(e.lat == null
+        ? 'The city publishes this call without a location (sensitive call type), so it cannot be shown on the map.'
+        : 'The map is not available (offline?), so this call cannot be shown on it.', 'info');
+      return;
+    }
+    m.bindPopup(popupHTML(e), { maxWidth: 300 }); // fresh content: the call may have closed since the dot was drawn
+    placeRing(m.getLatLng());
+    if (!fly) { m.openPopup(); return; }
+    revealMap();
+    if (S.onArrive) S.map.off('moveend', S.onArrive);
+    S.onArrive = () => { S.onArrive = null; if (S.selected === id) m.openPopup(); };
+    S.map.once('moveend', S.onArrive);
+    const zoom = Math.max(S.map.getZoom(), 16);
+    if (reducedMotion()) S.map.setView(m.getLatLng(), zoom, { animate: false });
+    else S.map.flyTo(m.getLatLng(), zoom, { duration: 0.8 });
+  }
+  function placeRing(latlng) {
+    clearRing(); // a new marker restarts the pulse
+    S.ring = window.L.marker(latlng, {
+      icon: window.L.divIcon({ className: 'lv-target', html: '<span></span>', iconSize: [0, 0] }),
+      interactive: false, keyboard: false,
+    }).addTo(S.map);
+  }
+  function clearRing() { if (S.ring) { S.ring.remove(); S.ring = null; } }
+  function clearSelection() { S.selected = null; clearRing(); markSelected(); }
+  function markSelected({ scroll = false } = {}) {
+    for (const n of root.querySelectorAll('[data-id][aria-current]')) n.removeAttribute('aria-current');
+    if (!S.selected) return;
+    for (const list of [el.prio, el.feed]) {
+      const n = list.querySelector(`[data-id="${CSS.escape(S.selected)}"]`);
+      if (!n) continue;
+      n.setAttribute('aria-current', 'true');
+      if (scroll) scrollWithin(list, n);
+    }
+  }
+  function scrollWithin(list, item) {
+    // Scroll only the list, never the page: a click on the map must not jump the page to a list below the fold.
+    const c = list.getBoundingClientRect();
+    const r = item.getBoundingClientRect();
+    if (r.top < c.top + 30 || r.bottom > c.bottom) list.scrollTop += r.top - c.top - 34; // room for the sticky group label
+  }
+  function revealMap() {
+    // When the map is mostly off screen (narrow layouts stack it above the lists), bring it back into view.
+    const box = el.mapPanel.getBoundingClientRect();
+    const top = document.querySelector('.topbar')?.getBoundingClientRect().bottom || 0;
+    const shown = Math.min(box.bottom, window.innerHeight) - Math.max(box.top, top);
+    if (shown < box.height * 0.6) el.mapPanel.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
   }
 
   // ---------- data ----------
@@ -377,7 +451,7 @@ export function createLive(root, ctx) {
   // ---------- paint ----------
   function eventHTML(e) {
     const crit = e.priority === 'crit';
-    return `<article class="post${crit ? ' post--crit' : ''}" data-id="${esc(e.id)}">
+    return `<article class="post${crit ? ' post--crit' : ''}" data-id="${esc(e.id)}"${S.selected === e.id ? ' aria-current="true"' : ''}>
       <div class="post__bar"></div>
       <div class="post__body">
         <div class="post__top"><span title="${esc(when(e))}">${esc(ago(e.ts))}</span>
@@ -387,8 +461,51 @@ export function createLive(root, ctx) {
         <div class="post__truth"><span class="tag">${esc(e.agency)}</span>${e.units > 1 ? `<span class="tag">${fmtInt(e.units)} units</span>` : ''}${e.active ? '<span class="tag tag--warn">open</span>' : '<span class="tag tag--ok">closed</span>'}${e.onscene && e.active ? '<span class="tag tag--ok">on scene</span>' : ''}</div>
       </div></article>`;
   }
+  function prioHTML(e) {
+    const located = e.lat != null;
+    const life = lifeSafety(e);
+    const fresh = S.prioReady && e.active && !S.prioSeen.has(e.id);
+    const status = !e.active ? '<span class="tag">closed</span>'
+      : e.onscene ? '<span class="tag tag--ok">on scene</span>' : '<span class="tag tag--warn">open</span>';
+    const where = [e.neighborhood, e.place].filter(Boolean).join(' · ');
+    return `<button type="button" class="prio${e.active ? '' : ' prio--closed'}${fresh ? ' prio--new' : ''}" data-id="${esc(e.id)}"${S.selected === e.id ? ' aria-current="true"' : ''}${located ? '' : ' aria-disabled="true"'} title="${located ? 'Show this call on the map' : 'The city publishes this call type without a location'}">
+      <span class="prio__bar" aria-hidden="true"></span>
+      <span class="prio__body">
+        <span class="prio__top"><span class="tag tag--bad">${esc(prName(e))}</span>${status}<span class="prio__ago" title="${esc(when(e))}">${esc(e.agency)} · ${esc(ago(e.ts))}</span></span>
+        <span class="prio__type">${life ? '<i class="prio__life" aria-hidden="true"></i><span class="sr-only">Life-safety call type: </span>' : ''}${txt(e.type)}</span>
+        <span class="prio__place">${located ? `⌖ ${esc(where || 'on the map')}` : 'location withheld by the city'}</span>
+      </span>
+      <span class="prio__go" aria-hidden="true">${locateIcon()}</span>
+    </button>`;
+  }
+  function paintPriority(list) {
+    const em = list.filter(e => e.priority === 'crit');
+    const open = em.filter(e => e.active).sort((a, b) => (lifeSafety(b) - lifeSafety(a)) || (b.ts - a.ts));
+    const closed = em.filter(e => !e.active); // list is newest first already
+    const shownClosed = closed.slice(0, PRIO_CLOSED_MAX);
+    el.prioMeta.textContent = `${fmtInt(open.length)} open · ${fmtInt(em.length)} in window`;
+    let html;
+    if (!em.length) {
+      html = `<div class="feed__empty">${Object.keys(S.feedErr).length ? 'The city feeds could not be reached.' : S.firstLoad ? '<span class="spinner"></span> Contacting the city feeds…' : 'No emergency-priority calls in the window.'}</div>`;
+    } else {
+      html = `<div class="prio-group"><span>Open now</span><span class="num">${fmtInt(open.length)}</span></div>`
+        + (open.length ? open.map(prioHTML).join('') : '<div class="prio-empty">No open emergency calls right now.</div>');
+      if (shownClosed.length) {
+        html += `<div class="prio-group"><span>Recently closed</span><span class="num">${shownClosed.length < closed.length ? `newest ${fmtInt(shownClosed.length)} of ${fmtInt(closed.length)}` : fmtInt(closed.length)}</span></div>`
+          + shownClosed.map(prioHTML).join('');
+      }
+    }
+    if (html !== S.prioHTML) {
+      const focused = el.prio.contains(document.activeElement) ? document.activeElement.dataset.id : null;
+      el.prio.innerHTML = html;
+      S.prioHTML = html;
+      if (focused) el.prio.querySelector(`[data-id="${CSS.escape(focused)}"]`)?.focus({ preventScroll: true });
+    }
+    for (const e of open) S.prioSeen.add(e.id);
+  }
   function paint() {
     const list = visible();
+    if (S.selected && !list.some(e => e.id === S.selected)) clearSelection();
     const crit = list.filter(e => e.priority === 'crit');
     const open = list.filter(e => e.active);
     el.n.textContent = fmtInt(list.length);
@@ -406,6 +523,7 @@ export function createLive(root, ctx) {
       ? shown.map(eventHTML).join('')
       : `<div class="feed__empty">${Object.keys(S.feedErr).length ? 'The city feeds could not be reached.' : S.firstLoad ? '<span class="spinner"></span> Contacting the city feeds…' : 'No calls match this filter in the window.'}</div>`;
     el.feedMeta.textContent = shown.length < list.filter(matches).length ? `newest 200 of ${fmtInt(list.filter(matches).length)}` : `${fmtInt(shown.length)} shown`;
+    paintPriority(list);
 
     // breakdown: top call types in the window
     const types = new Map();
@@ -444,7 +562,8 @@ export function createLive(root, ctx) {
   root.querySelectorAll('[data-window]').forEach(b => b.addEventListener('click', () => {
     S.windowH = Number(b.dataset.window);
     root.querySelectorAll('[data-window]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-    pollAll();
+    S.prioReady = false; // a wider window brings older calls in: they are not new arrivals
+    pollAll().then(() => { S.prioReady = true; });
     paint();
   }));
   root.querySelectorAll('[data-lvf]').forEach(b => b.addEventListener('click', () => {
@@ -455,9 +574,22 @@ export function createLive(root, ctx) {
   el.refresh.addEventListener('click', () => { el.refresh.disabled = true; pollAll({ announce: true }).finally(() => { el.refresh.disabled = false; }); });
   el.feed.addEventListener('click', ev => {
     const card = ev.target.closest('.post');
-    if (!card || !S.map) return;
-    const m = S.markers.get(card.dataset.id);
-    if (m) { S.map.flyTo(m.getLatLng(), Math.max(S.map.getZoom(), 14), { duration: reducedMotion() ? 0 : 0.8 }); m.openPopup(); }
+    if (card) select(card.dataset.id);
+  });
+  el.prio.addEventListener('click', ev => {
+    const b = ev.target.closest('.prio');
+    if (b) select(b.dataset.id);
+  });
+  el.prio.addEventListener('keydown', ev => {
+    // Arrow keys walk the list, Enter or Space (native button) goes to the call.
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(ev.key)) return;
+    const items = Array.from(el.prio.querySelectorAll('.prio'));
+    if (!items.length) return;
+    ev.preventDefault();
+    const i = items.indexOf(document.activeElement);
+    const next = ev.key === 'Home' ? 0 : ev.key === 'End' ? items.length - 1
+      : Math.max(0, Math.min(items.length - 1, i + (ev.key === 'ArrowDown' ? 1 : -1)));
+    items[next].focus();
   });
 
   function startTimers() {
@@ -476,7 +608,9 @@ export function createLive(root, ctx) {
       ensureMap();
       if (S.map) setTimeout(() => S.map.invalidateSize(), 60);
       const stale = !Object.keys(S.lastFetch).length || Math.max(...Object.values(S.lastFetch)) < Date.now() - 120000;
-      if (stale) pollAll();
+      // Calls already in the feed on first load are not "new": only later arrivals flash in the Priority panel.
+      if (stale) pollAll().then(() => { S.prioReady = true; });
+      else S.prioReady = true;
       pollSocial();
       startTimers();
     },
@@ -484,6 +618,9 @@ export function createLive(root, ctx) {
   };
 }
 
+function locateIcon() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true" width="15" height="15" style="fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>';
+}
 function refreshIcon() {
   return '<svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" style="fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3v4h-4"/></svg>';
 }
