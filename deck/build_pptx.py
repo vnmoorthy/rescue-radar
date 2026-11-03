@@ -966,7 +966,7 @@ def build(D, out):
                                         ("Privacy first.", "Best-effort PII redaction before a dispatcher reads a post."),
                                         ("Open base model.", "The LoRA adapter could be exported for self-hosting (not done yet)."),
                                         ("Honest evaluation.", "Unseen disasters, one shared prompt, intervals and significance tests.")]),
-            ("LIMITATIONS", ORANGE, [("It misses some.", (f"About {pct(1 - rec)} of rescue-critical posts on unseen disasters are not flagged, "
+            ("LIMITATIONS", ORANGE, [("It misses some.", (f"About {pct(round(1 - rec, 4) + 1e-9)} of rescue-critical posts on unseen disasters are not flagged, "
                                                           "so it runs beside 911, never instead of it.") if rec is not None else
                                       "Rescue-critical recall is n/a until results land; it runs beside 911, never instead of it."),
                                      ("Weakest category:", f"{label_name(weak[0])} (F1 {pct(weak[1])})." if weak else "n/a until results land."),
